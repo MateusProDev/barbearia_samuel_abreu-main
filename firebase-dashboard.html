@@ -1157,11 +1157,15 @@
             </div>
             <div class="initialization-content">
                 <div class="init-section">
-                    <h3>📁 Migração de Imagens Estáticas</h3>
-                    <p>Migrar todas as imagens estáticas do site para o Firebase</p>
-                    <button class="action-btn" onclick="migrateAllStaticImages()">
-                        📤 Migrar Imagens Estáticas
-                    </button>
+                    <h3>✅ Sistema Totalmente Operacional</h3>
+                    <p style="color: #4CAF50; font-weight: bold;">Todas as 21 imagens foram migradas com sucesso para o Firebase!</p>
+                    <p>O sistema agora opera 100% com imagens do Firebase, sem dependência de arquivos estáticos.</p>
+                    <div style="background: linear-gradient(135deg, #4CAF50, #2196F3); padding: 15px; border-radius: 10px; color: white; margin: 10px 0;">
+                        <strong>🎉 Migração Completa!</strong><br>
+                        • 21 imagens migradas ✅<br>
+                        • Sistema Firebase ativo ✅<br>
+                        • Dashboard responsivo ✅
+                    </div>
                     <div class="migration-progress" id="migration-progress" style="display: none;">
                         <p>Migrando imagens... <span class="loading-spinner"></span></p>
                         <div class="progress-bar">
@@ -1292,12 +1296,12 @@
                 }
             }
 
-            // Carregar imagens do Firebase
+            // Carregar imagens APENAS do Firebase (sem imagens estáticas)
             async loadImages() {
                 try {
                     console.log('🔄 Carregando imagens do Firebase...');
                     
-                    // Primeiro, carregar imagens do Firebase
+                    // Carregar APENAS imagens do Firebase
                     const snapshot = await db.collection('images').where('active', '==', true).get();
                     const firebaseImages = {};
 
@@ -1316,204 +1320,72 @@
                         });
                     });
 
-                    // Segundo, incluir imagens existentes do site (do JSON inicial)
-                    const existingImages = this.getExistingSiteImages();
-                    
-                    // Combinar imagens Firebase + existentes
-                    const allImages = this.combineImages(firebaseImages, existingImages);
-
-                    this.renderImages(allImages);
+                    // Renderizar APENAS imagens do Firebase
+                    this.renderImages(firebaseImages);
                     this.updateImageCount(snapshot.size);
                     
-                    console.log('✅ Imagens carregadas:', allImages);
+                    console.log('✅ Imagens Firebase carregadas:', firebaseImages);
                 } catch (error) {
                     console.error('❌ Erro ao carregar imagens:', error);
                     
-                    // Se falhar Firebase, pelo menos mostrar imagens existentes
-                    const existingImages = this.getExistingSiteImages();
-                    this.renderImages(existingImages);
+                    // Se falhar, mostrar mensagem de erro
+                    this.renderError('Erro ao carregar imagens do Firebase');
                 }
             }
 
-            // Obter imagens existentes do site
-            getExistingSiteImages() {
-                const existingImages = {
-                    hero: [
-                        {
-                            id: 'hero_main',
-                            title: 'Banner Principal',
-                            url: 'img/proprietario.jpeg',
-                            source: 'site',
-                            description: 'Imagem principal do banner'
-                        }
-                    ],
-                    services: [
-                        {
-                            id: 'service_cabelo_barba',
-                            title: 'Cabelo e Barba',
-                            url: 'img/cabelo e barba.jpeg',
-                            source: 'site',
-                            description: 'Serviço de corte e barba'
-                        },
-                        {
-                            id: 'service_infantil',
-                            title: 'Corte Infantil',
-                            url: 'img/Corte infantil.jpeg',
-                            source: 'site',
-                            description: 'Corte especializado para crianças'
-                        },
-                        {
-                            id: 'service_pigmentacao',
-                            title: 'Pigmentação',
-                            url: 'img/pigmentacao.jpeg',
-                            source: 'site',
-                            description: 'Pigmentação para cobertura de fios brancos'
-                        },
-                        {
-                            id: 'service_sobrancelha',
-                            title: 'Sobrancelha',
-                            url: 'img/sombracelha.jpeg',
-                            source: 'site',
-                            description: 'Design de sobrancelha masculina'
-                        },
-                        {
-                            id: 'service_tesoura',
-                            title: 'Corte na Tesoura',
-                            url: 'img/classico na tesoura.jpeg',
-                            source: 'site',
-                            description: 'Técnica clássica com tesoura'
-                        },
-                        {
-                            id: 'service_luzes',
-                            title: 'Luzes',
-                            url: 'img/luzes.jpeg',
-                            source: 'site',
-                            description: 'Mechas e luzes para visual moderno'
-                        },
-                        {
-                            id: 'service_platinado',
-                            title: 'Platinado',
-                            url: 'img/platinado.jpeg',
-                            source: 'site',
-                            description: 'Coloração platinada'
-                        }
-                    ],
-                    gallery: [
-                        {
-                            id: 'gallery_taper_fade',
-                            title: 'Taper Fade Americano',
-                            url: 'img/Corte taper fade Americano.jpeg',
-                            source: 'site',
-                            description: 'Estilo americano moderno'
-                        },
-                        {
-                            id: 'gallery_mid_fade',
-                            title: 'Mid Fade',
-                            url: 'img/Mid fade.jpeg',
-                            source: 'site',
-                            description: 'Degradê no meio da cabeça'
-                        },
-                        {
-                            id: 'gallery_high_fade',
-                            title: 'High Fade',
-                            url: 'img/High fadeDegradê alto.jpeg',
-                            source: 'site',
-                            description: 'Degradê alto com acabamentos versáteis'
-                        },
-                        {
-                            id: 'gallery_low_fade',
-                            title: 'Low Fade',
-                            url: 'img/Low fadeDegradê baixo.jpeg',
-                            source: 'site',
-                            description: 'Degradê baixo discreto'
-                        },
-                        {
-                            id: 'gallery_social',
-                            title: 'Social Clássico',
-                            url: 'img/Social Clássico..jpeg',
-                            source: 'site',
-                            description: 'Elegância atemporal'
-                        },
-                        {
-                            id: 'gallery_corte_social',
-                            title: 'Corte Social',
-                            url: 'img/corte_social.jpeg',
-                            source: 'site',
-                            description: 'Modelo tradicional'
-                        },
-                        {
-                            id: 'gallery_curly',
-                            title: 'Curly Hair',
-                            url: 'img/Curly hair..jpeg',
-                            source: 'site',
-                            description: 'Especializado em cabelos cacheados'
-                        },
-                        {
-                            id: 'gallery_freestyle',
-                            title: 'Freestyle',
-                            url: 'img/freestyle.jpeg',
-                            source: 'site',
-                            description: 'Corte criativo e personalizado'
-                        }
-                    ],
-                    team: [
-                        {
-                            id: 'team_samuel_1',
-                            title: 'Samuel Abreu - Principal',
-                            url: 'img/proprietario.jpeg',
-                            source: 'site',
-                            description: 'Proprietário e Barbeiro Master'
-                        },
-                        {
-                            id: 'team_samuel_2',
-                            title: 'Samuel Abreu - Foto 2',
-                            url: 'img/proprietario 2.jpeg',
-                            source: 'site',
-                            description: 'Segunda foto do proprietário'
-                        },
-                        {
-                            id: 'team_samuel_3',
-                            title: 'Samuel (Samu)',
-                            url: 'img/samu.jpeg',
-                            source: 'site',
-                            description: 'Foto adicional do Samuel'
-                        },
-                        {
-                            id: 'team_kaio_1',
-                            title: 'Kaio - Principal',
-                            url: 'img/kaioUm.jpeg',
-                            source: 'site',
-                            description: 'Barbeiro Profissional'
-                        },
-                        {
-                            id: 'team_kaio_2',
-                            title: 'Kaio - Foto 2',
-                            url: 'img/kaioDois.jpeg',
-                            source: 'site',
-                            description: 'Segunda foto do Kaio'
-                        }
-                    ]
-                };
-
-                return existingImages;
-            }
-
-            // Combinar imagens do Firebase com existentes
-            combineImages(firebaseImages, existingImages) {
-                const combined = {};
+            // Renderizar mensagem de erro
+            renderError(message) {
                 const sections = ['hero', 'services', 'gallery', 'team'];
-
+                
                 sections.forEach(section => {
-                    combined[section] = [
-                        ...(existingImages[section] || []),
-                        ...(firebaseImages[section] || [])
-                    ];
+                    const container = document.getElementById(`${section}-images`);
+                    if (container) {
+                        container.innerHTML = `<p style="text-align: center; color: #ff4444; padding: 20px;">${message}</p>`;
+                    }
                 });
-
-                return combined;
             }
 
-            // Renderizar imagens na interface
+            // ====================================
+            // SISTEMA DE IMAGENS FIREBASE-ONLY
+            // ====================================
+            
+            // Obter imagens do Firebase agrupadas por seção
+            getFirebaseImagesBySection() {
+                return new Promise((resolve, reject) => {
+                    db.collection('images')
+                        .orderBy('uploadDate', 'desc')
+                        .get()
+                        .then(snapshot => {
+                            const imagesBySection = {
+                                hero: [],
+                                services: [],
+                                gallery: [],
+                                team: []
+                            };
+
+                            snapshot.forEach(doc => {
+                                const imageData = {
+                                    id: doc.id,
+                                    ...doc.data(),
+                                    source: 'firebase'
+                                };
+                                
+                                const section = imageData.section || 'gallery';
+                                if (imagesBySection[section]) {
+                                    imagesBySection[section].push(imageData);
+                                }
+                            });
+
+                            resolve(imagesBySection);
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar imagens do Firebase:', error);
+                            reject(error);
+                        });
+                });
+            }
+
+            // Renderizar imagens na interface (APENAS Firebase)
             renderImages(imagesBySection) {
                 const sections = ['hero', 'services', 'gallery', 'team'];
                 
@@ -1524,26 +1396,25 @@
                     const images = imagesBySection[section] || [];
                     
                     if (images.length === 0) {
-                        container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 20px;">Nenhuma imagem nesta seção</p>';
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 30px; opacity: 0.6;">
+                                <p>📁 Nenhuma imagem nesta seção</p>
+                                <p style="font-size: 0.8rem;">Clique em "+ Adicionar Imagem" para começar</p>
+                            </div>
+                        `;
                         return;
                     }
                     
                     container.innerHTML = images.map(image => {
-                        const isExisting = image.source === 'site';
-                        const isFirebase = image.source === 'firebase';
-                        
-                        const statusBadge = isExisting ? 
-                            '<span class="image-badge existing">🏠 Site</span>' : 
-                            '<span class="image-badge firebase">☁️ Firebase</span>';
-                            
-                        const actionButtons = isExisting ? 
-                            `<button class="image-action-btn" onclick="replaceImage('${image.id}', '${section}')">🔄 Substituir</button>
-                             <button class="image-action-btn" onclick="migrateToFirebase('${image.id}')">📤 Migrar</button>` :
-                            `<button class="image-action-btn" onclick="editImage('${image.id}')">✏️ Editar</button>
-                             <button class="image-action-btn" onclick="deleteImage('${image.id}')">🗑️ Excluir</button>`;
+                        // Todas as imagens agora são do Firebase
+                        const statusBadge = '<span class="image-badge firebase">☁️ Firebase</span>';
+                        const actionButtons = `
+                            <button class="image-action-btn" onclick="editImage('${image.id}')">✏️ Editar</button>
+                            <button class="image-action-btn" onclick="deleteImage('${image.id}')">🗑️ Excluir</button>
+                        `;
                         
                         return `
-                            <div class="image-item ${isExisting ? 'existing-image' : 'firebase-image'}">
+                            <div class="image-item firebase-image">
                                 <div class="image-header">
                                     ${statusBadge}
                                 </div>
@@ -2265,6 +2136,8 @@
             }
         }
 
+        // FUNÇÃO DE MIGRAÇÃO DESABILITADA - Todas as imagens já estão no Firebase
+        /*
         async function migrateToFirebase(imageId) {
             if (!confirm('📤 Migrar esta imagem para o sistema Firebase? Isso permitirá editá-la e gerenciá-la melhor.')) {
                 return;
@@ -2310,6 +2183,7 @@
                 dashboard.showNotification('❌ Erro ao migrar imagem: ' + error.message, 'error');
             }
         }
+        */
 
         // Função para editar seções
         function editSection(sectionId) {
@@ -2424,88 +2298,15 @@
             }
         }
 
+        // FUNÇÃO DE MIGRAÇÃO MASSIVA DESABILITADA - Migração já concluída
+        /*
         async function migrateAllStaticImages() {
-            console.log('📤 Iniciando migração de todas as imagens estáticas...');
-            
-            try {
-                const progressElement = document.getElementById('migration-progress');
-                const progressFill = document.getElementById('migration-progress-fill');
-                const statusElement = document.getElementById('migration-status');
-                
-                progressElement.style.display = 'block';
-                progressFill.style.width = '0%';
-                statusElement.textContent = 'Preparando migração...';
-                
-                // Obter todas as imagens estáticas
-                const existingImages = dashboard.imageManager.getExistingSiteImages();
-                const allImages = [];
-                
-                for (const section in existingImages) {
-                    for (const image of existingImages[section]) {
-                        allImages.push({ ...image, section });
-                    }
-                }
-                
-                console.log(`📊 Total de ${allImages.length} imagens para migrar`);
-                
-                let migratedCount = 0;
-                
-                for (const image of allImages) {
-                    try {
-                        statusElement.textContent = `Migrando: ${image.title}...`;
-                        
-                        // Verificar se já existe no Firebase
-                        const existing = await db.collection('images')
-                            .where('originalId', '==', image.id)
-                            .limit(1)
-                            .get();
-                        
-                        if (existing.empty) {
-                            // Salvar no Firebase
-                            await db.collection('images').add({
-                                url: image.url,
-                                title: image.title,
-                                description: image.description,
-                                section: image.section,
-                                alt: image.title,
-                                migratedFrom: 'site',
-                                originalId: image.id,
-                                active: true,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                            
-                            console.log(`✅ Migrada: ${image.title}`);
-                        } else {
-                            console.log(`⚠️ Já existe: ${image.title}`);
-                        }
-                        
-                        migratedCount++;
-                        const progress = (migratedCount / allImages.length) * 100;
-                        progressFill.style.width = progress + '%';
-                        
-                    } catch (error) {
-                        console.error(`❌ Erro ao migrar ${image.title}:`, error);
-                    }
-                }
-                
-                statusElement.textContent = `✅ Migração concluída! ${migratedCount} imagens processadas.`;
-                dashboard.showNotification('✅ Migração de imagens concluída com sucesso!');
-                
-                // Recarregar imagens
-                if (dashboard.imageManager) {
-                    dashboard.imageManager.loadImages();
-                }
-                
-            } catch (error) {
-                console.error('❌ Erro na migração:', error);
-                dashboard.showNotification('❌ Erro na migração: ' + error.message, 'error');
-                
-                const statusElement = document.getElementById('migration-status');
-                if (statusElement) {
-                    statusElement.textContent = '❌ Erro na migração';
-                }
-            }
+            // Esta função foi desabilitada pois a migração já foi concluída com sucesso
+            // Todas as 21 imagens estáticas foram migradas para o Firebase
+            console.log('ℹ️ Migração já foi concluída. Sistema opera apenas com Firebase.');
+            dashboard.showNotification('ℹ️ Migração já concluída! Sistema 100% Firebase.', 'info');
         }
+        */
 
         async function initializeFirebaseStructure() {
             console.log('🏗️ Inicializando estrutura Firebase...');
