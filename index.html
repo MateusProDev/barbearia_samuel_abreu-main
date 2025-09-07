@@ -430,10 +430,6 @@
     <!-- Scripts -->
     <script src="script.js"></script>
     
-    <!-- Firebase SDK (opcional - para sincronização de conteúdo) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <!-- Sistema de Sincronização de Conteúdo -->
     <script src="content-sync.js"></script>
     
@@ -473,11 +469,11 @@
     </script>
 
     <!-- Firebase Scripts para Sincronização de Imagens -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <script>
-        // Configuração Firebase (mesma do dashboard)
+        // Configuração Firebase (versão compat para compatibilidade)
         const firebaseConfig = {
             apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
             authDomain: "barbeariasamuelabreu.firebaseapp.com",
@@ -489,6 +485,11 @@
 
         // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
+        
+        // Aguardar carregamento completo antes de inicializar sync
+        window.addEventListener('load', () => {
+            console.log('🔥 Firebase inicializado - aguardando carregamento do sync...');
+        });
     </script>
 
     <!-- Sistema de Sincronização de Imagens -->

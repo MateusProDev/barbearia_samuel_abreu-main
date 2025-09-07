@@ -5,65 +5,98 @@
 
 class SiteImageSync {
     constructor() {
+        this.firebaseReady = false;
         this.init(); 
     }
 
     init() {
-        this.setupFirebaseListeners();
-        this.loadImagesFromFirebase();
+        console.log('🔄 Inicializando Sistema de Sincronização de Imagens...');
+        this.waitForFirebase();
+    }
+
+    // Aguardar Firebase estar pronto
+    waitForFirebase() {
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            console.log('🔥 Firebase detectado! Configurando sincronização...');
+            this.firebaseReady = true;
+            this.setupFirebaseListeners();
+            this.loadImagesFromFirebase();
+        } else {
+            console.log('⏳ Aguardando Firebase carregar...');
+            setTimeout(() => this.waitForFirebase(), 500);
+        }
     }
 
     // Configurar listeners em tempo real do Firebase
     setupFirebaseListeners() {
-        if (typeof firebase === 'undefined' || !firebase.firestore) {
-            console.warn('Firebase não carregado ainda, tentando novamente...');
-            setTimeout(() => this.setupFirebaseListeners(), 1000);
-            return;
-        }
+        if (!this.firebaseReady) return;
 
         const db = firebase.firestore();
 
         // Listener para mudanças nas imagens
         db.collection('images').onSnapshot((snapshot) => {
-            console.log('🔄 Imagens atualizadas no Firebase');
+            console.log('🔄 Imagens atualizadas no Firebase - aplicando mudanças...');
             this.updateSiteImages();
+        }, (error) => {
+            console.error('❌ Erro no listener Firebase:', error);
         });
+    }
+
+    // Método público para atualizar imagens
+    updateSiteImages() {
+        this.loadImagesFromFirebase();
     }
 
     // Carregar e aplicar imagens do Firebase no site
     async loadImagesFromFirebase() {
         try {
-            if (typeof firebase === 'undefined' || !firebase.firestore) {
-                console.warn('Firebase não disponível');
+            if (!this.firebaseReady) {
+                console.warn('⚠️ Firebase não está pronto ainda');
                 return;
             }
 
+            console.log('📥 Carregando imagens do Firebase...');
             const db = firebase.firestore();
             const snapshot = await db.collection('images')
+                .where('active', '!=', false)
+                .orderBy('active')
                 .orderBy('createdAt', 'desc')
                 .get();
 
-            const imagesBySection = {};
+            const imagesBySection = {
+                hero: [],
+                services: [],
+                gallery: [],
+                team: []
+            };
 
+            let totalImages = 0;
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const section = data.section || 'gallery';
                 
-                if (!imagesBySection[section]) {
-                    imagesBySection[section] = [];
+                if (imagesBySection[section]) {
+                    imagesBySection[section].push({
+                        id: doc.id,
+                        ...data
+                    });
+                    totalImages++;
                 }
-                
-                imagesBySection[section].push({
-                    id: doc.id,
-                    ...data
-                });
+            });
+
+            console.log(`📊 Total de imagens carregadas: ${totalImages}`);
+            console.log('📋 Imagens por seção:', {
+                hero: imagesBySection.hero.length,
+                services: imagesBySection.services.length,
+                gallery: imagesBySection.gallery.length,
+                team: imagesBySection.team.length
             });
 
             // Aplicar imagens nas seções do site
             this.applyImagesToSite(imagesBySection);
 
         } catch (error) {
-            console.error('Erro ao carregar imagens do Firebase:', error);
+            console.error('❌ Erro ao carregar imagens do Firebase:', error);
         }
     }
 
@@ -140,18 +173,33 @@ class SiteImageSync {
 
     // Atualizar galeria de cortes
     updateGallerySection(galleryImages) {
+        console.log(`🖼️ Atualizando galeria com ${galleryImages.length} imagens`);
+        
         const galleryGrid = document.querySelector('.gallery-grid');
-        if (!galleryGrid) return;
+        if (!galleryGrid) {
+            console.warn('⚠️ Elemento .gallery-grid não encontrado!');
+            return;
+        }
+
+        // Verificar se há imagens do Firebase
+        if (galleryImages.length === 0) {
+            console.log('📭 Nenhuma imagem da galeria encontrada no Firebase - mantendo imagens estáticas');
+            return; // Manter imagens estáticas se não houver no Firebase
+        }
 
         // Limpar galeria atual
         galleryGrid.innerHTML = '';
+        console.log('🧹 Galeria limpa, adicionando novas imagens...');
 
-        // Adicionar novas imagens
-        galleryImages.forEach(imageData => {
+        // Adicionar novas imagens do Firebase
+        galleryImages.forEach((imageData, index) => {
+            console.log(`➕ Adicionando imagem ${index + 1}: ${imageData.title}`);
+            
             const galleryItem = document.createElement('div');
             galleryItem.className = 'gallery-item fade-in';
             galleryItem.innerHTML = `
-                <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
+                <img src="${imageData.url}" alt="${imageData.title}" loading="lazy" 
+                     onerror="console.error('Erro ao carregar imagem:', '${imageData.title}')">
                 <div class="gallery-overlay">
                     <h3>${imageData.title || 'Corte Profissional'}</h3>
                     <p>${imageData.description || 'Estilo único e personalizado'}</p>
@@ -165,6 +213,8 @@ class SiteImageSync {
 
             galleryGrid.appendChild(galleryItem);
         });
+
+        console.log('✅ Galeria atualizada com sucesso!');
     }
 
     // Atualizar carrossel da equipe
