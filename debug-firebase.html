@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Firebase - Barbearia Samuel Abreu</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #fff; 
+        }
+        .debug-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+        }
+        .log-area { 
+            background: #000; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            height: 300px; 
+            overflow-y: auto; 
+            font-family: monospace; 
+            font-size: 12px;
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+        }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .warning { background: #ff9800; }
+        .info { background: #2196F3; }
+        button { 
+            background: #ff6b35; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #e55527; }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .image-card {
+            background: #333;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .image-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .section-count {
+            background: #555;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔥 Debug Firebase - Barbearia Samuel Abreu</h1>
+        
+        <div id="firebase-status" class="status info">
+            🔄 Verificando Firebase...
+        </div>
+
+        <div class="button-group">
+            <button onclick="testFirebaseConnection()">🔗 Testar Conexão</button>
+            <button onclick="loadGalleryImages()">🖼️ Carregar Galeria</button>
+            <button onclick="loadAllImages()">📸 Carregar Todas</button>
+            <button onclick="clearLogs()">🧹 Limpar Logs</button>
+        </div>
+
+        <div class="section-counts">
+            <span id="hero-count" class="section-count">Hero: 0</span>
+            <span id="services-count" class="section-count">Serviços: 0</span>
+            <span id="gallery-count" class="section-count">Galeria: 0</span>
+            <span id="team-count" class="section-count">Equipe: 0</span>
+        </div>
+
+        <div id="log-area" class="log-area"></div>
+
+        <div id="image-grid" class="image-grid"></div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Configuração Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        // Inicializar Firebase
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            log('✅ Firebase inicializado com sucesso');
+            updateStatus('✅ Firebase conectado', 'success');
+        } catch (error) {
+            log('❌ Erro ao inicializar Firebase: ' + error.message);
+            updateStatus('❌ Erro Firebase: ' + error.message, 'error');
+        }
+
+        // Função para log
+        function log(message) {
+            const logArea = document.getElementById('log-area');
+            const time = new Date().toLocaleTimeString();
+            logArea.innerHTML += `<div>[${time}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Atualizar status
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('firebase-status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // Testar conexão Firebase
+        async function testFirebaseConnection() {
+            try {
+                log('🔗 Testando conexão Firebase...');
+                
+                const testDoc = await db.collection('images').limit(1).get();
+                
+                if (testDoc.empty) {
+                    log('⚠️ Coleção "images" está vazia');
+                    updateStatus('⚠️ Sem imagens no Firebase', 'warning');
+                } else {
+                    log('✅ Conexão Firebase OK - ' + testDoc.size + ' documento(s) encontrado(s)');
+                    updateStatus('✅ Firebase funcionando', 'success');
+                }
+            } catch (error) {
+                log('❌ Erro na conexão: ' + error.message);
+                updateStatus('❌ Erro na conexão', 'error');
+            }
+        }
+
+        // Carregar imagens da galeria
+        async function loadGalleryImages() {
+            try {
+                log('🖼️ Carregando imagens da galeria...');
+                
+                const snapshot = await db.collection('images')
+                    .where('section', '==', 'gallery')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                log(`📊 Encontradas ${snapshot.size} imagens na galeria`);
+                
+                const imageGrid = document.getElementById('image-grid');
+                imageGrid.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    log(`➕ ${data.title} - ${data.url}`);
+                    
+                    const imageCard = document.createElement('div');
+                    imageCard.className = 'image-card';
+                    imageCard.innerHTML = `
+                        <img src="${data.url}" alt="${data.title}" 
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjEwMCIgeT0iNjUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXJybzwvdGV4dD48L3N2Zz4='">
+                        <h4>${data.title}</h4>
+                        <p>${data.description || 'Sem descrição'}</p>
+                        <small>ID: ${doc.id}</small>
+                    `;
+                    imageGrid.appendChild(imageCard);
+                });
+                
+                updateStatus(`✅ ${snapshot.size} imagens da galeria carregadas`, 'success');
+                
+            } catch (error) {
+                log('❌ Erro ao carregar galeria: ' + error.message);
+                updateStatus('❌ Erro ao carregar galeria', 'error');
+            }
+        }
+
+        // Carregar todas as imagens
+        async function loadAllImages() {
+            try {
+                log('📸 Carregando todas as imagens...');
+                
+                const snapshot = await db.collection('images')
+                    .orderBy('section')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                const sections = { hero: 0, services: 0, gallery: 0, team: 0 };
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const section = data.section || 'gallery';
+                    if (sections.hasOwnProperty(section)) {
+                        sections[section]++;
+                    }
+                    log(`📁 ${section.toUpperCase()}: ${data.title}`);
+                });
+
+                // Atualizar contadores
+                document.getElementById('hero-count').textContent = `Hero: ${sections.hero}`;
+                document.getElementById('services-count').textContent = `Serviços: ${sections.services}`;
+                document.getElementById('gallery-count').textContent = `Galeria: ${sections.gallery}`;
+                document.getElementById('team-count').textContent = `Equipe: ${sections.team}`;
+
+                log(`📊 Total: ${snapshot.size} imagens`);
+                updateStatus(`✅ ${snapshot.size} imagens carregadas`, 'success');
+                
+            } catch (error) {
+                log('❌ Erro ao carregar imagens: ' + error.message);
+                updateStatus('❌ Erro ao carregar imagens', 'error');
+            }
+        }
+
+        // Limpar logs
+        function clearLogs() {
+            document.getElementById('log-area').innerHTML = '';
+            document.getElementById('image-grid').innerHTML = '';
+        }
+
+        // Auto-teste quando carregar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testFirebaseConnection();
+                setTimeout(() => {
+                    loadAllImages();
+                }, 1000);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
