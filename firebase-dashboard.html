@@ -1382,10 +1382,10 @@
                 }
             }
 
-            // Carregar imagens EXATAMENTE como o site (query idêntica)
+            // Carregar imagens com query otimizada
             async loadImages() {
                 try {
-                    console.log('🔄 Carregando imagens do Firebase (query idêntica ao site)...');
+                    console.log('🔄 Carregando imagens do Firebase...');
                     
                     // Limpar qualquer cache antigo
                     const sections = ['hero', 'services', 'gallery', 'team'];
@@ -1396,10 +1396,9 @@
                         }
                     });
                     
-                    // QUERY IDÊNTICA AO SITE - exatamente a mesma que site-image-sync.js usa
+                    // Query simples sem índice complexo
+                    console.log('📡 Buscando todas as imagens...');
                     const snapshot = await db.collection('images')
-                        .where('active', '!=', false)
-                        .orderBy('active')
                         .orderBy('createdAt', 'desc')
                         .get();
                     
@@ -1413,37 +1412,40 @@
                     let totalLoaded = 0;
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        const section = data.section || 'gallery';
                         
-                        if (firebaseImages[section]) {
-                            firebaseImages[section].push({
-                                id: doc.id,
-                                source: 'firebase',
-                                ...data
-                            });
-                            totalLoaded++;
+                        // Filtrar apenas imagens ativas
+                        const isActive = data.active !== false;
+                        
+                        if (isActive) {
+                            const section = data.section || 'gallery';
+                            
+                            if (firebaseImages[section]) {
+                                firebaseImages[section].push({
+                                    id: doc.id,
+                                    source: 'firebase',
+                                    ...data
+                                });
+                                totalLoaded++;
+                            }
                         }
                     });
 
-                    console.log(`📊 Total de imagens Firebase carregadas: ${totalLoaded}`);
-                    console.log('📋 Imagens por seção (idênticas ao site):', {
+                    console.log(`📊 Total de imagens ativas carregadas: ${totalLoaded}`);
+                    console.log('📋 Imagens por seção:', {
                         hero: firebaseImages.hero.length,
                         services: firebaseImages.services.length,
                         gallery: firebaseImages.gallery.length,
                         team: firebaseImages.team.length
                     });
 
-                    // Renderizar EXATAMENTE as mesmas imagens que aparecem no site
+                    // Renderizar as imagens
                     this.renderImages(firebaseImages);
                     this.updateImageCount(totalLoaded);
                     
-                    console.log('✅ Dashboard sincronizado com as mesmas imagens do site!');
+                    console.log('✅ Imagens carregadas com sucesso!');
                 } catch (error) {
                     console.error('❌ Erro ao carregar imagens:', error);
-                    
-                    // Se falhar, tentar query mais simples
-                    console.warn('⚠️ Tentando query alternativa...');
-                    this.loadImagesAlternative();
+                    this.renderError('Erro ao carregar imagens: ' + error.message);
                 }
             }
 
@@ -2190,6 +2192,7 @@
                 // Verificar se ImageManager está disponível
                 let imageManager = dashboard?.imageManager;
                 if (!imageManager) {
+                    console.log('⚠️ ImageManager não encontrado, criando novo...');
                     imageManager = new ImageManager();
                 }
                 
@@ -2199,7 +2202,15 @@
                 const description = formData.get('description');
                 const section = formData.get('section');
                 
+                console.log('📝 Dados do formulário:', { 
+                    file: file?.name, 
+                    title, 
+                    section,
+                    fileSize: file?.size 
+                });
+                
                 if (!file || !title || !section) {
+                    console.log('❌ Campos obrigatórios faltando');
                     alert('❌ Preencha todos os campos obrigatórios');
                     return;
                 }
@@ -2207,12 +2218,22 @@
                 // Mostrar progresso
                 const progressElement = document.getElementById('upload-progress');
                 const progressFill = document.getElementById('progress-fill');
-                progressElement.style.display = 'block';
+                if (progressElement) {
+                    progressElement.style.display = 'block';
+                }
+                
+                console.log('☁️ Iniciando upload para Cloudinary...');
                 
                 // Upload para Cloudinary
                 const result = await imageManager.uploadImageToCloudinary(file, (progress) => {
-                    progressFill.style.width = progress + '%';
+                    console.log(`📊 Progresso: ${progress}%`);
+                    if (progressFill) {
+                        progressFill.style.width = progress + '%';
+                    }
                 });
+                
+                console.log('✅ Upload Cloudinary concluído:', result.secure_url);
+                console.log('💾 Salvando no Firebase...');
                 
                 // Salvar no Firebase
                 await imageManager.saveImageToFirebase({
@@ -2224,25 +2245,48 @@
                     alt: title
                 });
                 
-                console.log('✅ Imagem salva com sucesso');
-                dashboard.showNotification('✅ Imagem adicionada com sucesso!');
+                console.log('✅ Imagem salva com sucesso no Firebase');
+                
+                if (dashboard && dashboard.showNotification) {
+                    dashboard.showNotification('✅ Imagem adicionada com sucesso!');
+                } else {
+                    alert('✅ Imagem adicionada com sucesso!');
+                }
                 
                 // Fechar modals e recarregar
                 closeModal('uploadModal');
-                imageManager.loadImages();
+                if (imageManager.loadImages) {
+                    imageManager.loadImages();
+                }
                 
                 // Reset form
                 event.target.reset();
-                progressElement.style.display = 'none';
-                progressFill.style.width = '0%';
+                if (progressElement) {
+                    progressElement.style.display = 'none';
+                }
+                if (progressFill) {
+                    progressFill.style.width = '0%';
+                }
                 
             } catch (error) {
-                console.error('❌ Erro no upload:', error);
-                dashboard.showNotification('❌ Erro ao fazer upload: ' + error.message, 'error');
+                console.error('💥 ERRO COMPLETO NO UPLOAD:', error);
+                console.error('Stack trace:', error.stack);
+                
+                if (dashboard && dashboard.showNotification) {
+                    dashboard.showNotification('❌ Erro ao fazer upload: ' + error.message, 'error');
+                } else {
+                    alert('❌ Erro ao fazer upload: ' + error.message);
+                }
                 
                 // Esconder progresso
-                document.getElementById('upload-progress').style.display = 'none';
-                document.getElementById('progress-fill').style.width = '0%';
+                const progressElement = document.getElementById('upload-progress');
+                const progressFill = document.getElementById('progress-fill');
+                if (progressElement) {
+                    progressElement.style.display = 'none';
+                }
+                if (progressFill) {
+                    progressFill.style.width = '0%';
+                }
             }
         }
 
@@ -2547,6 +2591,18 @@
             });
             
             // Testar conectividade Firebase
+            async function testFirebaseConnection() {
+                try {
+                    console.log('🔌 Testando conexão Firebase...');
+                    const testDoc = await db.collection('images').limit(1).get();
+                    console.log('✅ Conexão Firebase OK');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Erro na conexão Firebase:', error);
+                    return false;
+                }
+            }
+            
             testFirebaseConnection();
             
             // Forçar recarregamento completo das imagens

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Teste Cloudinary + Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Teste Cloudinary + Firebase Upload</h1>
+        
+        <div id="log" class="log"></div>
+        
+        <div class="form-group">
+            <button onclick="testCloudinary()">🌤️ Testar Cloudinary</button>
+            <button onclick="testFirebase()">🔥 Testar Firebase</button>
+            <button onclick="testAuth()">🔐 Testar Auth</button>
+        </div>
+        
+        <hr>
+        
+        <h2>📤 Teste de Upload Completo</h2>
+        
+        <form id="testForm">
+            <div class="form-group">
+                <label for="file">Escolher Imagem:</label>
+                <input type="file" id="file" accept="image/*" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="title">Título:</label>
+                <input type="text" id="title" value="Teste Upload" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="section">Seção:</label>
+                <select id="section" required>
+                    <option value="gallery">Galeria</option>
+                    <option value="hero">Hero</option>
+                    <option value="services">Serviços</option>
+                    <option value="team">Equipe</option>
+                </select>
+            </div>
+            
+            <div class="progress" id="progress" style="display: none;">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <button type="submit">🚀 Upload Completo</button>
+        </form>
+        
+        <div id="status"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-compat-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-compat-firestore.js"></script>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_W3VHvmQKHDjTr6y8o4rz1YaHUKFGFkU",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.appspot.com",
+            messagingSenderId: "592481178343",
+            appId: "1:592481178343:web:10a20b8bf6b9b00f9f3e1f"
+        };
+
+        let currentUser = null;
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Função de log
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Auth listener
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            if (user) {
+                log(`✅ Usuário autenticado: ${user.email}`);
+                showStatus(`Conectado como: ${user.email}`, 'success');
+            } else {
+                log('⚠️ Usuário não autenticado');
+                showStatus('Não autenticado - faça login no dashboard primeiro', 'error');
+            }
+        });
+
+        // Teste Cloudinary
+        async function testCloudinary() {
+            log('🌤️ TESTANDO CLOUDINARY...');
+            
+            try {
+                // Criar uma imagem de teste (1x1 pixel)
+                const canvas = document.createElement('canvas');
+                canvas.width = 1;
+                canvas.height = 1;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, 1, 1);
+                
+                canvas.toBlob(async (blob) => {
+                    try {
+                        const formData = new FormData();
+                        formData.append("file", blob, "test.png");
+                        formData.append("upload_preset", "qc7tkpck");
+                        formData.append("cloud_name", "doeiv6m4h");
+
+                        log('📡 Enviando para Cloudinary...');
+                        
+                        const response = await fetch('https://api.cloudinary.com/v1_1/doeiv6m4h/image/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            log(`✅ Cloudinary OK: ${result.secure_url}`);
+                            showStatus('Cloudinary funcionando!', 'success');
+                        } else {
+                            log(`❌ Erro Cloudinary: ${JSON.stringify(result)}`);
+                            showStatus('Erro no Cloudinary', 'error');
+                        }
+                    } catch (error) {
+                        log(`❌ Erro no teste Cloudinary: ${error.message}`);
+                        showStatus('Erro no Cloudinary: ' + error.message, 'error');
+                    }
+                }, 'image/png');
+                
+            } catch (error) {
+                log(`❌ Erro geral Cloudinary: ${error.message}`);
+                showStatus('Erro no Cloudinary: ' + error.message, 'error');
+            }
+        }
+
+        // Teste Firebase
+        async function testFirebase() {
+            log('🔥 TESTANDO FIREBASE...');
+            
+            try {
+                log('📡 Buscando documentos...');
+                const snapshot = await db.collection('images').limit(1).get();
+                log(`✅ Firebase OK - ${snapshot.size} documentos encontrados`);
+                showStatus('Firebase funcionando!', 'success');
+                
+                log('📡 Testando escrita...');
+                const testDoc = await db.collection('test').add({
+                    test: true,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                log(`✅ Escrita OK - ID: ${testDoc.id}`);
+                
+                // Deletar documento de teste
+                await testDoc.delete();
+                log('🗑️ Documento de teste removido');
+                
+            } catch (error) {
+                log(`❌ Erro Firebase: ${error.message}`);
+                showStatus('Erro no Firebase: ' + error.message, 'error');
+            }
+        }
+
+        // Teste Auth
+        async function testAuth() {
+            log('🔐 TESTANDO AUTENTICAÇÃO...');
+            
+            if (currentUser) {
+                log(`✅ Usuário autenticado: ${currentUser.email}`);
+                log(`🆔 UID: ${currentUser.uid}`);
+                showStatus('Usuário autenticado!', 'success');
+            } else {
+                log('❌ Usuário não autenticado');
+                showStatus('Usuário não autenticado', 'error');
+            }
+        }
+
+        // Upload completo
+        async function uploadComplete(event) {
+            event.preventDefault();
+            log('🚀 INICIANDO UPLOAD COMPLETO...');
+            
+            try {
+                const fileInput = document.getElementById('file');
+                const title = document.getElementById('title').value;
+                const section = document.getElementById('section').value;
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    throw new Error('Nenhum arquivo selecionado');
+                }
+                
+                log(`📝 Arquivo: ${file.name} (${file.size} bytes)`);
+                log(`📝 Título: ${title}`);
+                log(`📝 Seção: ${section}`);
+                
+                // Mostrar progresso
+                const progress = document.getElementById('progress');
+                const progressBar = document.getElementById('progressBar');
+                progress.style.display = 'block';
+                progressBar.style.width = '0%';
+                
+                // 1. Upload para Cloudinary
+                log('☁️ Fase 1: Upload para Cloudinary...');
+                
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", "qc7tkpck");
+                formData.append("cloud_name", "doeiv6m4h");
+
+                const xhr = new XMLHttpRequest();
+                
+                const cloudinaryResult = await new Promise((resolve, reject) => {
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            const progress = Math.round((e.loaded / e.total) * 50); // 50% para Cloudinary
+                            progressBar.style.width = progress + '%';
+                            log(`📊 Upload Cloudinary: ${progress}%`);
+                        }
+                    });
+
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            const response = JSON.parse(xhr.responseText);
+                            progressBar.style.width = '50%';
+                            log(`✅ Cloudinary concluído: ${response.secure_url}`);
+                            resolve(response);
+                        } else {
+                            reject(new Error('Erro no upload Cloudinary'));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Erro de conexão Cloudinary'));
+                    xhr.open('POST', 'https://api.cloudinary.com/v1_1/doeiv6m4h/image/upload');
+                    xhr.send(formData);
+                });
+                
+                // 2. Salvar no Firebase
+                log('🔥 Fase 2: Salvando no Firebase...');
+                progressBar.style.width = '75%';
+                
+                const docRef = await db.collection('images').add({
+                    url: cloudinaryResult.secure_url,
+                    title: title,
+                    section: section,
+                    cloudinaryId: cloudinaryResult.public_id,
+                    alt: title,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    active: true
+                });
+                
+                progressBar.style.width = '100%';
+                log(`✅ Firebase concluído - ID: ${docRef.id}`);
+                
+                log('🎉 UPLOAD COMPLETO COM SUCESSO!');
+                showStatus('Upload realizado com sucesso!', 'success');
+                
+                // Reset
+                document.getElementById('testForm').reset();
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 3000);
+                
+            } catch (error) {
+                log(`💥 ERRO NO UPLOAD: ${error.message}`);
+                console.error('Erro completo:', error);
+                showStatus('Erro no upload: ' + error.message, 'error');
+                
+                document.getElementById('progress').style.display = 'none';
+                document.getElementById('progressBar').style.width = '0%';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('testForm').addEventListener('submit', uploadComplete);
+
+        // Log inicial
+        log('🎯 Sistema de teste carregado');
+        log('🔍 Verificando configurações...');
+        log('☁️ Cloudinary: doeiv6m4h');
+        log('🔥 Firebase: barbeariasamuelabreu');
+        log('📤 Preset: qc7tkpck');
+    </script>
+</body>
+</html>
