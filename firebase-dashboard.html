@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Barbearia Samuel Abreu</title>
+    <style>
+        :root {
+            --primary-color: #d4af37;
+            --secondary-color: #1a1a1a;
+            --accent-color: #f4d03f;
+            --bg-color: #0f0f0f;
+            --text-color: #ffffff;
+            --card-bg: #1a1a1a;
+            --border-radius: 12px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: var(--text-color);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            border-bottom: 2px solid var(--primary-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .admin-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .user-role {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: var(--bg-color);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(212, 175, 55, 0.3);
+        }
+
+        .nav-btn.logout {
+            background: linear-gradient(45deg, #ff4444, #cc3333);
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .dashboard-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            transition: var(--transition);
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(212, 175, 55, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+        }
+
+        .card-content {
+            line-height: 1.6;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 15px;
+            font-size: 1rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(212, 175, 55, 0.3);
+        }
+
+        .preview-section {
+            background: rgba(15, 15, 15, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background-color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 600px;
+            border: 2px solid var(--primary-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close:hover {
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            background: rgba(26, 26, 26, 0.8);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn-save {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(76, 175, 80, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 9999;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .notification.error {
+            background: linear-gradient(45deg, #ff4444, #cc3333);
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                padding: 30px 15px;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 25px;
+            }
+            
+            .modal-content {
+                width: 90%;
+                margin: 5% auto;
+                padding: 25px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+            
+            .admin-header {
+                padding: 15px 0;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                padding: 0 15px;
+            }
+            
+            .admin-title {
+                font-size: 1.8rem;
+                text-align: center;
+            }
+            
+            .dashboard-container {
+                padding: 20px 10px;
+                max-width: 100%;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .dashboard-card {
+                padding: 20px;
+                margin: 0 5px;
+            }
+            
+            .card-icon {
+                font-size: 1.8rem;
+                margin-right: 10px;
+            }
+            
+            .card-title {
+                font-size: 1.2rem;
+            }
+            
+            .action-btn {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 20px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group input,
+            .form-group textarea {
+                padding: 12px;
+                font-size: 16px; /* Previne zoom no iOS */
+            }
+            
+            .btn-primary {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            
+            .notification {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                transform: translateY(-100px);
+                border-radius: 8px;
+            }
+            
+            .notification.show {
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .admin-title {
+                font-size: 1.5rem;
+            }
+            
+            .dashboard-container {
+                padding: 15px 5px;
+            }
+            
+            .dashboard-card {
+                padding: 15px;
+                margin: 0;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                text-align: center;
+                margin-bottom: 15px;
+            }
+            
+            .card-icon {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            
+            .modal-content {
+                width: 98%;
+                margin: 5% auto;
+                padding: 15px;
+                border-radius: 8px;
+            }
+            
+            .modal-header {
+                padding-bottom: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .modal-title {
+                font-size: 1.3rem;
+            }
+            
+            .close {
+                font-size: 24px;
+                top: 10px;
+                right: 15px;
+            }
+            
+            .form-group label {
+                font-size: 0.9rem;
+            }
+            
+            .form-group input,
+            .form-group textarea {
+                padding: 10px;
+                border-radius: 6px;
+            }
+            
+            .btn-primary {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Correções adicionais para overflow */
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+        
+        .dashboard-grid {
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        .dashboard-card {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0; /* Permite que flexbox quebre o conteúdo */
+        }
+        
+        .card-content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* 🖼️ Estilos para Gerenciamento de Imagens */
+        .image-manager-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .image-section {
+            margin-bottom: 30px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            background: rgba(26, 26, 26, 0.5);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .add-image-btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: var(--bg-color);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .add-image-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .image-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            background: var(--card-bg);
+        }
+
+        .image-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .image-info {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .image-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .image-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .image-action-btn {
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .image-action-btn:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: rgba(212, 175, 55, 0.05);
+        }
+
+        .upload-area:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        .upload-area.drag-over {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-progress {
+            display: none;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-active {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <div class="header-content">
+            <h1 class="admin-title">🔧 Dashboard Administrativo</h1>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-name" id="userName">Carregando...</div>
+                    <div class="user-role" id="userRole">Administrador</div>
+                </div>
+                <a href="index.html" class="nav-btn">Ver Site</a>
+                <button onclick="logout()" class="nav-btn logout">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="dashboard-grid">
+            <!-- Conteúdo Principal -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">📝</div>
+                    <h3 class="card-title">Conteúdo Principal</h3>
+                </div>
+                <div class="card-content">
+                    <div class="preview-section">
+                        <p><strong>Título:</strong> <span id="preview-title">Carregando...</span></p>
+                        <p><strong>Descrição:</strong> <span id="preview-description">Carregando...</span></p>
+                    </div>
+                    <div class="status-indicator"></div>
+                    <span>Sistema online e sincronizado</span>
+                    <button class="action-btn" onclick="console.log('🖱️ Botão conteúdo clicado'); openContentEditor();">
+                        ✏️ Editar Conteúdo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Horários -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">🕒</div>
+                    <h3 class="card-title">Horários</h3>
+                </div>
+                <div class="card-content">
+                    <div class="preview-section" id="schedule-preview">
+                        <p>Carregando horários...</p>
+                    </div>
+                    <div class="status-indicator"></div>
+                    <span>Horários atualizados</span>
+                    <button class="action-btn" onclick="console.log('🖱️ Botão horários clicado'); openScheduleEditor();">
+                        🕒 Editar Horários
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contato -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">📞</div>
+                    <h3 class="card-title">Contato</h3>
+                </div>
+                <div class="card-content">
+                    <div class="preview-section" id="contact-preview">
+                        <p>Carregando informações de contato...</p>
+                    </div>
+                    <div class="status-indicator"></div>
+                    <span>Informações sincronizadas</span>
+                    <button class="action-btn" onclick="console.log('🖱️ Botão contato clicado'); openContactEditor();">
+                        📍 Editar Contato
+                    </button>
+                </div>
+            </div>
+
+            <!-- Gerenciamento de Imagens -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">🖼️</div>
+                    <h3 class="card-title">Imagens do Site</h3>
+                </div>
+                <div class="card-content">
+                    <div class="preview-section">
+                        <p><strong>Total de Imagens:</strong> <span id="total-images">Carregando...</span></p>
+                        <p><strong>Última Atualização:</strong> <span id="last-image-update">Carregando...</span></p>
+                    </div>
+                    <div class="status-indicator status-active"></div>
+                    <span>Sistema de imagens ativo</span>
+                    <button class="action-btn" onclick="openImageManager()">
+                        🖼️ Gerenciar Imagens
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Conteúdo -->
+    <div id="contentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📝 Editar Conteúdo Principal</h2>
+                <span class="close" onclick="closeModal('contentModal')">&times;</span>
+            </div>
+            <form onsubmit="saveMainContent(event)">
+                <div class="form-group">
+                    <label for="site-title">Título do Site:</label>
+                    <input type="text" id="site-title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="site-description">Descrição:</label>
+                    <textarea id="site-description" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="site-mission">Missão:</label>
+                    <textarea id="site-mission" name="mission" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="site-keywords">Palavras-chave (SEO):</label>
+                    <input type="text" id="site-keywords" name="keywords" placeholder="barbearia, cortes, barba...">
+                </div>
+                <button type="submit" class="btn-save">💾 Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Horários -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🕒 Editar Horários</h2>
+                <span class="close" onclick="closeModal('scheduleModal')">&times;</span>
+            </div>
+            <form onsubmit="saveSchedule(event)">
+                <div class="form-group">
+                    <label for="weekday-morning">Segunda a Sexta (Manhã):</label>
+                    <input type="text" id="weekday-morning" name="weekdayMorning" placeholder="08:00 às 12:00">
+                </div>
+                <div class="form-group">
+                    <label for="weekday-afternoon">Segunda a Sexta (Tarde):</label>
+                    <input type="text" id="weekday-afternoon" name="weekdayAfternoon" placeholder="14:00 às 18:00">
+                </div>
+                <div class="form-group">
+                    <label for="saturday-morning">Sábado (Manhã):</label>
+                    <input type="text" id="saturday-morning" name="saturdayMorning" placeholder="08:00 às 12:00">
+                </div>
+                <div class="form-group">
+                    <label for="saturday-afternoon">Sábado (Tarde):</label>
+                    <input type="text" id="saturday-afternoon" name="saturdayAfternoon" placeholder="14:00 às 18:00">
+                </div>
+                <div class="form-group">
+                    <label for="sunday">Domingo:</label>
+                    <input type="text" id="sunday" name="sunday" placeholder="08:00 às 12:00 ou Fechado">
+                </div>
+                <button type="submit" class="btn-save">💾 Salvar Horários</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Contato -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📞 Editar Contato</h2>
+                <span class="close" onclick="closeModal('contactModal')">&times;</span>
+            </div>
+            <form onsubmit="saveContact(event)">
+                <div class="form-group">
+                    <label for="contact-address">Endereço:</label>
+                    <textarea id="contact-address" name="address" placeholder="Rua, número, bairro, cidade..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="contact-phone">Telefone/WhatsApp:</label>
+                    <input type="text" id="contact-phone" name="phone" placeholder="(85) 99999-9999">
+                </div>
+                <div class="form-group">
+                    <label for="contact-email">E-mail:</label>
+                    <input type="email" id="contact-email" name="email" placeholder="contato@barbeariasamuelabreu.com">
+                </div>
+                <div class="form-group">
+                    <label for="contact-instagram">Instagram:</label>
+                    <input type="text" id="contact-instagram" name="instagram" placeholder="@barbeariasamuelabreu">
+                </div>
+                <button type="submit" class="btn-save">💾 Salvar Contato</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Gerenciamento de Imagens -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🖼️ Gerenciar Imagens do Site</h2>
+                <span class="close" onclick="closeModal('imageModal')">&times;</span>
+            </div>
+            <div class="image-manager-container">
+                <div class="image-sections">
+                    <!-- Seção Hero/Banner -->
+                    <div class="image-section">
+                        <div class="section-header">
+                            <h3 class="section-title">🌟 Banner Principal</h3>
+                            <button class="add-image-btn" onclick="addImageToSection('hero')">+ Adicionar</button>
+                        </div>
+                        <div class="images-grid" id="hero-images"></div>
+                    </div>
+
+                    <!-- Seção Serviços -->
+                    <div class="image-section">
+                        <div class="section-header">
+                            <h3 class="section-title">✂️ Serviços</h3>
+                            <button class="add-image-btn" onclick="addImageToSection('services')">+ Adicionar</button>
+                        </div>
+                        <div class="images-grid" id="services-images"></div>
+                    </div>
+
+                    <!-- Seção Galeria -->
+                    <div class="image-section">
+                        <div class="section-header">
+                            <h3 class="section-title">📸 Galeria</h3>
+                            <button class="add-image-btn" onclick="addImageToSection('gallery')">+ Adicionar</button>
+                        </div>
+                        <div class="images-grid" id="gallery-images"></div>
+                    </div>
+
+                    <!-- Seção Equipe -->
+                    <div class="image-section">
+                        <div class="section-header">
+                            <h3 class="section-title">👨‍💼 Equipe</h3>
+                            <button class="add-image-btn" onclick="addImageToSection('team')">+ Adicionar</button>
+                        </div>
+                        <div class="images-grid" id="team-images"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Upload de Imagem -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📤 Upload de Imagem</h2>
+                <span class="close" onclick="closeModal('uploadModal')">&times;</span>
+            </div>
+            <form onsubmit="uploadImage(event)">
+                <div class="form-group">
+                    <label for="image-title">Título da Imagem:</label>
+                    <input type="text" id="image-title" name="title" required placeholder="Ex: Corte Social">
+                </div>
+                <div class="form-group">
+                    <label for="image-description">Descrição:</label>
+                    <textarea id="image-description" name="description" placeholder="Descrição da imagem..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Selecione a Imagem:</label>
+                    <div class="upload-area" onclick="document.getElementById('image-file').click()">
+                        <p>📁 Clique aqui ou arraste uma imagem</p>
+                        <p style="font-size: 0.9rem; opacity: 0.7;">Formatos: JPG, PNG, WebP (max: 5MB)</p>
+                    </div>
+                    <input type="file" id="image-file" class="file-input" accept="image/*" required>
+                    <div class="upload-progress" id="upload-progress">
+                        <p>Fazendo upload... <span class="loading-spinner"></span></p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="current-section" name="section">
+                <button type="submit" class="btn-save">📤 Fazer Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts - Versão Compat para compatibilidade -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // 🔥 Configuração Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // 🖼️ Classe para gerenciar imagens
+        class ImageManager {
+            constructor() {
+                this.setupDragAndDrop();
+                this.loadImages();
+            }
+
+            // Função para upload no Cloudinary
+            async uploadImageToCloudinary(file, progressCallback) {
+                await this.validateImage(file);
+
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", "qc7tkpck");
+                formData.append("cloud_name", "doeiv6m4h");
+
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    
+                    // Progress tracking
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable && progressCallback) {
+                            const progress = Math.round((e.loaded / e.total) * 100);
+                            progressCallback(progress);
+                        }
+                    });
+
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            const response = JSON.parse(xhr.responseText);
+                            resolve(response);
+                        } else {
+                            reject(new Error('Erro ao fazer upload da imagem'));
+                        }
+                    };
+
+                    xhr.onerror = function() {
+                        reject(new Error('Erro de conexão durante o upload'));
+                    };
+
+                    xhr.open('POST', 'https://api.cloudinary.com/v1_1/doeiv6m4h/image/upload');
+                    xhr.send(formData);
+                });
+            }
+
+            // Validar imagem
+            validateImage(file) {
+                return new Promise((resolve, reject) => {
+                    // Verificar tipo
+                    if (!file.type.startsWith('image/')) {
+                        reject(new Error('Arquivo deve ser uma imagem'));
+                        return;
+                    }
+
+                    // Verificar tamanho (5MB max)
+                    if (file.size > 5 * 1024 * 1024) {
+                        reject(new Error('Imagem deve ter no máximo 5MB'));
+                        return;
+                    }
+
+                    resolve();
+                });
+            }
+
+            // Salvar imagem no Firebase
+            async saveImageToFirebase(imageData) {
+                try {
+                    await db.collection('images').add({
+                        ...imageData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        active: true
+                    });
+                    
+                    console.log('✅ Imagem salva no Firebase');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Erro ao salvar imagem no Firebase:', error);
+                    throw error;
+                }
+            }
+
+            // Carregar imagens do Firebase
+            async loadImages() {
+                try {
+                    const snapshot = await db.collection('images').where('active', '==', true).get();
+                    const imagesBySection = {};
+
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const section = data.section || 'gallery';
+                        
+                        if (!imagesBySection[section]) {
+                            imagesBySection[section] = [];
+                        }
+                        
+                        imagesBySection[section].push({
+                            id: doc.id,
+                            ...data
+                        });
+                    });
+
+                    this.renderImages(imagesBySection);
+                    this.updateImageCount(snapshot.size);
+                } catch (error) {
+                    console.error('❌ Erro ao carregar imagens:', error);
+                }
+            }
+
+            // Renderizar imagens na interface
+            renderImages(imagesBySection) {
+                const sections = ['hero', 'services', 'gallery', 'team'];
+                
+                sections.forEach(section => {
+                    const container = document.getElementById(`${section}-images`);
+                    if (!container) return;
+
+                    const images = imagesBySection[section] || [];
+                    
+                    if (images.length === 0) {
+                        container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 20px;">Nenhuma imagem nesta seção</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = images.map(image => `
+                        <div class="image-item">
+                            <img src="${image.url}" alt="${image.title || 'Imagem'}" class="image-preview">
+                            <div class="image-info">
+                                <div class="image-title">${image.title || 'Sem título'}</div>
+                                <div class="image-actions">
+                                    <button class="image-action-btn" onclick="editImage('${image.id}')">✏️</button>
+                                    <button class="image-action-btn" onclick="deleteImage('${image.id}')">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                });
+            }
+
+            // Deletar imagem
+            async deleteImage(imageId) {
+                try {
+                    await db.collection('images').doc(imageId).update({
+                        active: false,
+                        deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    await this.loadImages(); // Recarregar imagens
+                    return true;
+                } catch (error) {
+                    console.error('❌ Erro ao deletar imagem:', error);
+                    throw error;
+                }
+            }
+
+            // Configurar drag and drop
+            setupDragAndDrop() {
+                setTimeout(() => {
+                    const uploadArea = document.querySelector('.upload-area');
+                    if (!uploadArea) return;
+
+                    uploadArea.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        uploadArea.classList.add('drag-over');
+                    });
+
+                    uploadArea.addEventListener('dragleave', (e) => {
+                        if (!uploadArea.contains(e.relatedTarget)) {
+                            uploadArea.classList.remove('drag-over');
+                        }
+                    });
+
+                    uploadArea.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        uploadArea.classList.remove('drag-over');
+                        
+                        const files = e.dataTransfer.files;
+                        if (files.length > 0) {
+                            document.getElementById('image-file').files = files;
+                        }
+                    });
+                }, 1000);
+            }
+
+            // Atualizar contador de imagens
+            updateImageCount(count) {
+                const totalElement = document.getElementById('total-images');
+                if (totalElement) {
+                    totalElement.textContent = count;
+                }
+
+                const lastUpdateElement = document.getElementById('last-image-update');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = new Date().toLocaleString('pt-BR');
+                }
+            }
+        }
+
+        // 🔐 Classe para gerenciar o dashboard
+        class FirebaseDashboard {
+            constructor() {
+                this.currentUser = null;
+                this.imageManager = null;
+                this.setupAuthListener();
+            }
+
+            setupAuthListener() {
+                // Listener principal de autenticação Firebase
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log('👤 Usuário autenticado:', user.email);
+                        this.currentUser = user;
+                        this.initializeDashboard();
+                    } else {
+                        console.log('❌ Usuário não autenticado, redirecionando...');
+                        window.location.href = 'firebase-login.html';
+                    }
+                });
+            }
+
+            initializeDashboard() {
+                // Inicializar ImageManager após autenticação
+                this.imageManager = new ImageManager();
+                console.log('🖼️ ImageManager inicializado');
+                
+                // Carregar dados do dashboard
+                this.loadInitialData();
+            }
+
+            async verifyUserAndLoad(user) {
+                try {
+                    console.log('🔍 Verificando permissões no Firestore para:', user.email);
+                    
+                    const usersSnapshot = await db.collection('users')
+                        .where('email', '==', user.email)
+                        .where('isAdmin', '==', true)
+                        .get();
+
+                    if (!usersSnapshot.empty) {
+                        const adminData = usersSnapshot.docs[0].data();
+                        console.log('✅ Admin verificado no Firestore:', adminData);
+                        
+                        // Atualizar último login
+                        await usersSnapshot.docs[0].ref.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        // Definir dados do usuário atual (apenas na memória)
+                        this.currentUser = {
+                            uid: user.uid,
+                            email: user.email,
+                            isAdmin: true,
+                            name: adminData.name || 'Administrador'
+                        };
+
+                        this.updateUserInterface();
+                        this.loadDashboardData();
+                    } else {
+                        console.warn('❌ Usuário não é administrador no Firestore');
+                        alert('Acesso negado. Este usuário não tem permissões de administrador.');
+                        await auth.signOut();
+                        window.location.href = 'firebase-login.html';
+                    }
+
+                } catch (error) {
+                    console.error('❌ Erro ao verificar permissões:', error);
+                    alert('Erro ao verificar permissões: ' + error.message);
+                    await auth.signOut();
+                    window.location.href = 'firebase-login.html';
+                }
+            }
+
+            updateUserInterface() {
+                if (this.currentUser) {
+                    document.getElementById('userName').textContent = this.currentUser.name;
+                    document.getElementById('userRole').textContent = 'Administrador do Sistema';
+                }
+            }
+
+            async loadDashboardData() {
+                try {
+                    console.log('🔄 Iniciando carregamento dos dados do dashboard...');
+                    console.log('📡 Configurando listeners em tempo real...');
+                    this.setupRealtimeListeners();
+                    console.log('📊 Carregando dados iniciais...');
+                    await this.loadInitialData();
+                    console.log('✅ Dados do dashboard carregados com sucesso!');
+                } catch (error) {
+                    console.error('❌ Erro ao carregar dados:', error);
+                    console.error('❌ Stack trace:', error.stack);
+                }
+            }
+
+            setupRealtimeListeners() {
+                // Listener para conteúdo principal
+                db.collection('siteContent').doc('main')
+                    .onSnapshot((doc) => {
+                        if (doc.exists) {
+                            this.updateContentPreview(doc.data());
+                        }
+                    }, (error) => {
+                        console.error('❌ Erro no listener de conteúdo:', error);
+                    });
+
+                // Listener para horários
+                db.collection('siteContent').doc('schedule')
+                    .onSnapshot((doc) => {
+                        if (doc.exists) {
+                            this.updateSchedulePreview(doc.data());
+                        }
+                    }, (error) => {
+                        console.error('❌ Erro no listener de horários:', error);
+                    });
+
+                // Listener para contato
+                db.collection('siteContent').doc('contact')
+                    .onSnapshot((doc) => {
+                        if (doc.exists) {
+                            this.updateContactPreview(doc.data());
+                        }
+                    }, (error) => {
+                        console.error('❌ Erro no listener de contato:', error);
+                    });
+            }
+
+            async loadInitialData() {
+                try {
+                    console.log('📋 Buscando documentos no Firestore...');
+                    const [mainDoc, scheduleDoc, contactDoc] = await Promise.all([
+                        db.collection('siteContent').doc('main').get(),
+                        db.collection('siteContent').doc('schedule').get(),
+                        db.collection('siteContent').doc('contact').get()
+                    ]);
+
+                    console.log('📄 Documentos obtidos:', {
+                        main: mainDoc.exists,
+                        schedule: scheduleDoc.exists,
+                        contact: contactDoc.exists
+                    });
+
+                    if (mainDoc.exists) {
+                        console.log('📝 Atualizando preview do conteúdo principal...');
+                        this.updateContentPreview(mainDoc.data());
+                    } else {
+                        console.log('⚠️ Documento main não existe, criando dados padrão...');
+                        await this.createDefaultContent();
+                    }
+
+                    if (scheduleDoc.exists) {
+                        console.log('📅 Atualizando preview dos horários...');
+                        this.updateSchedulePreview(scheduleDoc.data());
+                    } else {
+                        console.log('⚠️ Documento schedule não existe, criando dados padrão...');
+                        await this.createDefaultSchedule();
+                    }
+
+                    if (contactDoc.exists) {
+                        console.log('📞 Atualizando preview dos contatos...');
+                        this.updateContactPreview(contactDoc.data());
+                    }
+
+                    console.log('✅ Dados iniciais carregados');
+                } catch (error) {
+                    console.error('❌ Erro ao carregar dados iniciais:', error);
+                }
+            }
+
+            updateContentPreview(data) {
+                document.getElementById('preview-title').textContent = data.title || 'Sem título';
+                document.getElementById('preview-description').textContent = data.description || 'Sem descrição';
+            }
+
+            updateSchedulePreview(data) {
+                const preview = document.getElementById('schedule-preview');
+                preview.innerHTML = `
+                    <p><strong>Segunda a Sexta:</strong></p>
+                    <p>Manhã: ${data.weekdayMorning || 'Não definido'}</p>
+                    <p>Tarde: ${data.weekdayAfternoon || 'Não definido'}</p>
+                    <p><strong>Sábado:</strong></p>
+                    <p>Manhã: ${data.saturdayMorning || 'Não definido'}</p>
+                    <p>Tarde: ${data.saturdayAfternoon || 'Não definido'}</p>
+                    <p><strong>Domingo:</strong> ${data.sunday || 'Não definido'}</p>
+                `;
+            }
+
+            updateContactPreview(data) {
+                const preview = document.getElementById('contact-preview');
+                preview.innerHTML = `
+                    <p><strong>Endereço:</strong> ${data.address || 'Não definido'}</p>
+                    <p><strong>Telefone:</strong> ${data.phone || 'Não definido'}</p>
+                    <p><strong>E-mail:</strong> ${data.email || 'Não definido'}</p>
+                    <p><strong>Instagram:</strong> ${data.instagram || 'Não definido'}</p>
+                `;
+            }
+
+            async saveMainContent(data) {
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error('Usuário não autenticado no Firebase');
+                }
+
+                console.log('💾 Salvando conteúdo principal...');
+                await db.collection('siteContent').doc('main').set({
+                    ...data,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: user.email
+                });
+                console.log('✅ Conteúdo principal salvo');
+            }
+
+            async saveSchedule(data) {
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error('Usuário não autenticado no Firebase');
+                }
+
+                console.log('💾 Salvando horários...');
+                await db.collection('siteContent').doc('schedule').set({
+                    ...data,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: user.email
+                });
+                console.log('✅ Horários salvos');
+            }
+
+            async saveContact(data) {
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error('Usuário não autenticado no Firebase');
+                }
+
+                console.log('💾 Salvando contato...');
+                await db.collection('siteContent').doc('contact').set({
+                    ...data,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: user.email
+                });
+                console.log('✅ Contato salvo');
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => notification.classList.add('show'), 100);
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+        }
+
+        // 🚀 Inicializar Dashboard
+        let dashboard;
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎯 DOM carregado - inicializando dashboard...');
+            dashboard = new FirebaseDashboard();
+            
+            // Verificar se os botões existem
+            setTimeout(() => {
+                const buttons = [
+                    { id: 'btn-content', selector: 'button[onclick="openContentEditor()"]' },
+                    { id: 'btn-schedule', selector: 'button[onclick="openScheduleEditor()"]' },
+                    { id: 'btn-contact', selector: 'button[onclick="openContactEditor()"]' }
+                ];
+                
+                buttons.forEach(btn => {
+                    const element = document.querySelector(btn.selector);
+                    if (element) {
+                        console.log('✅ Botão encontrado:', btn.id);
+                        
+                        // Adicionar listener adicional para debug
+                        element.addEventListener('click', () => {
+                            console.log('🖱️ Clique detectado no botão:', btn.id);
+                        });
+                    } else {
+                        console.warn('⚠️ Botão não encontrado:', btn.id);
+                    }
+                });
+                
+                // Verificar se modais existem
+                const modals = ['contentModal', 'scheduleModal', 'contactModal'];
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        console.log('✅ Modal encontrado:', modalId);
+                    } else {
+                        console.warn('⚠️ Modal não encontrado:', modalId);
+                    }
+                });
+            }, 2000);
+        });
+
+        // 📝 Funções para modais
+        function openContentEditor() {
+            console.log('🔄 Abrindo editor de conteúdo...');
+            
+            // Verificar autenticação
+            const user = auth.currentUser;
+            if (!user) {
+                alert('❌ Usuário não autenticado. Faça login novamente.');
+                window.location.href = 'firebase-login.html';
+                return;
+            }
+            
+            console.log('👤 Usuário autenticado:', user.email);
+            
+            // Carregar dados do Firestore
+            db.collection('siteContent').doc('main').get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        console.log('📄 Dados carregados:', data);
+                        
+                        document.getElementById('site-title').value = data.title || '';
+                        document.getElementById('site-description').value = data.description || '';
+                        document.getElementById('site-mission').value = data.mission || '';
+                        document.getElementById('site-keywords').value = data.keywords || '';
+                    } else {
+                        console.warn('⚠️ Documento main não encontrado');
+                    }
+                    
+                    // Abrir modal
+                    const modal = document.getElementById('contentModal');
+                    if (modal) {
+                        modal.style.display = 'block';
+                        console.log('✅ Modal de conteúdo aberto');
+                    } else {
+                        console.error('❌ Modal contentModal não encontrado');
+                    }
+                })
+                .catch((error) => {
+                    console.error('❌ Erro ao carregar dados:', error);
+                    alert('Erro ao carregar dados: ' + error.message);
+                });
+        }
+
+        function openScheduleEditor() {
+            console.log('🔄 Abrindo editor de horários...');
+            
+            // Verificar autenticação
+            const user = auth.currentUser;
+            if (!user) {
+                alert('❌ Usuário não autenticado. Faça login novamente.');
+                window.location.href = 'firebase-login.html';
+                return;
+            }
+            
+            // Carregar dados do Firestore
+            db.collection('siteContent').doc('schedule').get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        console.log('📄 Horários carregados:', data);
+                        
+                        document.getElementById('weekday-morning').value = data.weekdayMorning || '';
+                        document.getElementById('weekday-afternoon').value = data.weekdayAfternoon || '';
+                        document.getElementById('saturday-morning').value = data.saturdayMorning || '';
+                        document.getElementById('saturday-afternoon').value = data.saturdayAfternoon || '';
+                        document.getElementById('sunday').value = data.sunday || '';
+                    } else {
+                        console.warn('⚠️ Documento schedule não encontrado');
+                    }
+                    
+                    // Abrir modal
+                    const modal = document.getElementById('scheduleModal');
+                    if (modal) {
+                        modal.style.display = 'block';
+                        console.log('✅ Modal de horários aberto');
+                    } else {
+                        console.error('❌ Modal scheduleModal não encontrado');
+                    }
+                })
+                .catch((error) => {
+                    console.error('❌ Erro ao carregar horários:', error);
+                    alert('Erro ao carregar horários: ' + error.message);
+                });
+        }
+
+        function openContactEditor() {
+            console.log('🔄 Abrindo editor de contato...');
+            
+            // Verificar autenticação
+            const user = auth.currentUser;
+            if (!user) {
+                alert('❌ Usuário não autenticado. Faça login novamente.');
+                window.location.href = 'firebase-login.html';
+                return;
+            }
+            
+            // Carregar dados do Firestore
+            db.collection('siteContent').doc('contact').get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        console.log('📄 Contato carregado:', data);
+                        
+                        document.getElementById('contact-address').value = data.address || '';
+                        document.getElementById('contact-phone').value = data.phone || '';
+                        document.getElementById('contact-email').value = data.email || '';
+                        document.getElementById('contact-instagram').value = data.instagram || '';
+                    } else {
+                        console.warn('⚠️ Documento contact não encontrado');
+                        // Criar campos vazios se documento não existir
+                        document.getElementById('contact-address').value = '';
+                        document.getElementById('contact-phone').value = '';
+                        document.getElementById('contact-email').value = '';
+                        document.getElementById('contact-instagram').value = '';
+                    }
+                    
+                    // Abrir modal
+                    const modal = document.getElementById('contactModal');
+                    if (modal) {
+                        modal.style.display = 'block';
+                        console.log('✅ Modal de contato aberto');
+                    } else {
+                        console.error('❌ Modal contactModal não encontrado');
+                    }
+                })
+                .catch((error) => {
+                    console.error('❌ Erro ao carregar contato:', error);
+                    alert('Erro ao carregar contato: ' + error.message);
+                });
+        }
+
+        // 💾 Funções de salvamento
+        async function saveMainContent(event) {
+            event.preventDefault();
+            try {
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData);
+                await dashboard.saveMainContent(data);
+                dashboard.showNotification('✅ Conteúdo atualizado com sucesso!');
+                closeModal('contentModal');
+            } catch (error) {
+                console.error('❌ Erro ao salvar conteúdo:', error);
+                dashboard.showNotification('❌ Erro ao salvar conteúdo: ' + error.message, 'error');
+            }
+        }
+
+        async function saveSchedule(event) {
+            event.preventDefault();
+            try {
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData);
+                await dashboard.saveSchedule(data);
+                dashboard.showNotification('✅ Horários atualizados com sucesso!');
+                closeModal('scheduleModal');
+            } catch (error) {
+                console.error('❌ Erro ao salvar horários:', error);
+                dashboard.showNotification('❌ Erro ao salvar horários: ' + error.message, 'error');
+            }
+        }
+
+        async function saveContact(event) {
+            event.preventDefault();
+            try {
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData);
+                await dashboard.saveContact(data);
+                dashboard.showNotification('✅ Contato atualizado com sucesso!');
+                closeModal('contactModal');
+            } catch (error) {
+                console.error('❌ Erro ao salvar contato:', error);
+                dashboard.showNotification('❌ Erro ao salvar contato: ' + error.message, 'error');
+            }
+        }
+
+        // �️ Funções para Gerenciamento de Imagens
+        let imageManager;
+
+        function openImageManager() {
+            console.log('🖼️ Abrindo gerenciador de imagens...');
+            
+            // Verificar autenticação
+            const user = auth.currentUser;
+            if (!user) {
+                alert('❌ Usuário não autenticado. Faça login novamente.');
+                window.location.href = 'firebase-login.html';
+                return;
+            }
+            
+            // Verificar se o dashboard e ImageManager estão inicializados
+            if (!dashboard || !dashboard.imageManager) {
+                console.log('⚠️ ImageManager não inicializado, criando novo...');
+                dashboard.imageManager = new ImageManager();
+            }
+            
+            // Carregar imagens
+            dashboard.imageManager.loadImages();
+            
+            // Abrir modal
+            const modal = document.getElementById('imageModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Modal de imagens aberto');
+            } else {
+                console.error('❌ Modal imageModal não encontrado');
+            }
+        }
+
+        function addImageToSection(section) {
+            console.log('➕ Adicionando imagem à seção:', section);
+            
+            // Definir seção atual
+            document.getElementById('current-section').value = section;
+            
+            // Limpar form
+            document.getElementById('image-title').value = '';
+            document.getElementById('image-description').value = '';
+            document.getElementById('image-file').value = '';
+            
+            // Abrir modal de upload
+            const uploadModal = document.getElementById('uploadModal');
+            if (uploadModal) {
+                uploadModal.style.display = 'block';
+                console.log('✅ Modal de upload aberto para seção:', section);
+            } else {
+                console.error('❌ Modal uploadModal não encontrado');
+            }
+        }
+
+        async function uploadImage(event) {
+            event.preventDefault();
+            console.log('📤 Iniciando upload de imagem...');
+            
+            try {
+                // Verificar se ImageManager está disponível
+                let imageManager = dashboard?.imageManager;
+                if (!imageManager) {
+                    imageManager = new ImageManager();
+                }
+                
+                const formData = new FormData(event.target);
+                const file = formData.get('image-file');
+                const title = formData.get('title');
+                const description = formData.get('description');
+                const section = formData.get('section');
+                
+                if (!file || !title || !section) {
+                    alert('❌ Preencha todos os campos obrigatórios');
+                    return;
+                }
+                
+                // Mostrar progresso
+                const progressElement = document.getElementById('upload-progress');
+                const progressFill = document.getElementById('progress-fill');
+                progressElement.style.display = 'block';
+                
+                // Upload para Cloudinary
+                const result = await imageManager.uploadImageToCloudinary(file, (progress) => {
+                    progressFill.style.width = progress + '%';
+                });
+                
+                // Salvar no Firebase
+                await imageManager.saveImageToFirebase({
+                    url: result.secure_url,
+                    title: title,
+                    description: description,
+                    section: section,
+                    cloudinaryId: result.public_id,
+                    alt: title
+                });
+                
+                console.log('✅ Imagem salva com sucesso');
+                dashboard.showNotification('✅ Imagem adicionada com sucesso!');
+                
+                // Fechar modals e recarregar
+                closeModal('uploadModal');
+                imageManager.loadImages();
+                
+                // Reset form
+                event.target.reset();
+                progressElement.style.display = 'none';
+                progressFill.style.width = '0%';
+                
+            } catch (error) {
+                console.error('❌ Erro no upload:', error);
+                dashboard.showNotification('❌ Erro ao fazer upload: ' + error.message, 'error');
+                
+                // Esconder progresso
+                document.getElementById('upload-progress').style.display = 'none';
+                document.getElementById('progress-fill').style.width = '0%';
+            }
+        }
+
+        async function deleteImage(imageId) {
+            if (!confirm('❌ Tem certeza que deseja excluir esta imagem?')) {
+                return;
+            }
+            
+            try {
+                let imageManager = dashboard?.imageManager;
+                if (!imageManager) {
+                    imageManager = new ImageManager();
+                }
+                
+                await imageManager.deleteImage(imageId);
+                dashboard.showNotification('✅ Imagem excluída com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao excluir imagem:', error);
+                dashboard.showNotification('❌ Erro ao excluir imagem: ' + error.message, 'error');
+            }
+        }
+
+        function editImage(imageId) {
+            // Por enquanto, apenas log - funcionalidade de edição pode ser implementada depois
+            console.log('✏️ Editando imagem:', imageId);
+            dashboard.showNotification('ℹ️ Funcionalidade de edição em desenvolvimento');
+        }
+
+        // �🔄 Funções utilitárias
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        async function logout() {
+            if (confirm('Tem certeza que deseja sair?')) {
+                try {
+                    console.log('🚪 Fazendo logout...');
+                    await auth.signOut();
+                    console.log('✅ Logout realizado');
+                    window.location.href = 'firebase-login.html';
+                } catch (error) {
+                    console.error('❌ Erro ao fazer logout:', error);
+                    dashboard.showNotification('❌ Erro ao sair do sistema', 'error');
+                }
+            }
+        }
+
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        };
+    </script>
+</body>
+</html>

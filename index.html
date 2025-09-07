@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Barbearia Samuel Abreu - 11 anos renovando autoestimas com profissionais qualificados. Cortes modernos, barba, pigmentação e muito mais.">
+    <meta name="keywords" content="barbearia, cortes de cabelo, barba, Fortaleza, Samuel Abreu, fade, degradê, barbeiro profissional">
+    <meta name="author" content="Barbearia Samuel Abreu">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Barbearia Samuel Abreu - Profissionalismo e Estilo">
+    <meta property="og:description" content="11 anos renovando autoestimas com profissionais qualificados. Cortes modernos, barba, pigmentação e muito mais.">
+    <meta property="og:image" content="img/logo_barber.png">
+    <meta property="og:url" content="https://barbearia-samuel-abreu.com">
+    <meta property="og:type" content="website">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/logo_barber.png">
+    <link rel="apple-touch-icon" href="img/logo_barber.png">
+    
+    <!-- Preconnect para fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="style.css" media="all">
+    
+    <title>Barbearia Samuel Abreu - Profissionalismo e Estilo</title>
+
+    <!-- Google Analytics Otimizado -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-150XXE438D"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-150XXE438D', {
+            page_title: 'Barbearia Samuel Abreu',
+            page_location: window.location.href,
+            send_page_view: true
+        });
+    </script>
+    
+    <!-- Preloader Styles -->
+    <style>
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .preloader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(212, 175, 55, 0.3);
+            border-top: 3px solid #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loader-text {
+            color: #d4af37;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div>
+            <div class="loader"></div>
+        </div>
+    </div>
+    <!-- Header Moderno -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="#home"><img src="img/logo_barber.png" alt="Logo Barbearia Samuel Abreu"></a>
+            </div>
+            <nav>
+                <div class="barbearia">
+                    <div class="line"></div>
+                    <div class="line"></div>
+                    <div class="line"></div>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#home">INÍCIO</a></li>
+                    <li><a href="#servicos">SERVIÇOS</a></li>
+                    <li><a href="#cortes">CORTES</a></li>
+                    <li><a href="#sobre">SOBRE</a></li>
+                    <li><a href="contatos.html">CONTATOS</a></li>
+                    <li><a href="login.html">ADMIN</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <img src="img/logo_barber.png" alt="Logo Barbearia" class="hero-logo">
+            <h1>Barbearia Samuel Abreu</h1>
+            <p>11 anos renovando autoestimas com profissionais qualificados e produtos de qualidade. Venha viver essa experiência conosco.</p>
+            <a href="https://wa.link/19u2v4" class="btn btn-whatsapp" target="_blank">
+                ATENDIMENTO WHATSAPP
+            </a>
+        </div>
+    </section>
+
+    <!-- Seção de Serviços -->
+    <section id="servicos" class="section">
+        <h2 class="section-title">NOSSOS SERVIÇOS</h2>
+        <p class="section-subtitle">Oferecemos uma ampla gama de serviços para cuidar do seu visual com excelência e profissionalismo</p>
+        
+        <div class="services-grid">
+            <div class="service-card fade-in">
+                <img src="img/cabelo e barba.jpeg" alt="Cabelo e Barba">
+                <h3>CABELO E BARBA</h3>
+                <p>Corte completo com acabamento perfeito da barba, deixando você com visual impecável</p>
+            </div>
+            
+            <div class="service-card fade-in">
+                <img src="img/Corte infantil.jpeg" alt="Corte Infantil">
+                <h3>CORTE INFANTIL</h3>
+                <p>Atendimento especializado para crianças com ambiente acolhedor e profissionais experientes</p>
+            </div>
+            
+            <div class="service-card fade-in">
+                <img src="img/pigmentacao.jpeg" alt="Pigmentação">
+                <h3>PIGMENTAÇÃO</h3>
+                <p>Técnica avançada para cobertura de fios brancos e realce da cor natural</p>
+            </div>
+            
+            <div class="service-card fade-in">
+                <img src="img/sombracelha.jpeg" alt="Sobrancelha">
+                <h3>SOBRANCELHA</h3>
+                <p>Design e modelagem de sobrancelhas para valorizar o olhar masculino</p>
+            </div>
+            
+            <div class="service-card fade-in">
+                <img src="img/classico na tesoura.jpeg" alt="Corte na Tesoura">
+                <h3>CORTE NA TESOURA</h3>
+                <p>Técnica clássica com acabamento refinado para um visual sofisticado</p>
+            </div>
+            
+            <div class="service-card fade-in">
+                <img src="img/luzes.jpeg" alt="Luzes">
+                <h3>LUZES</h3>
+                <p>Mechas e luzes para criar um visual moderno e diferenciado</p>
+            </div>
+            
+            <div class="service-card fade-in">
+                <img src="img/platinado.jpeg" alt="Platinado">
+                <h3>PLATINADO</h3>
+                <p>Coloração platinada para um visual arrojado e contemporâneo</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Cortes -->
+    <section id="cortes" class="section">
+        <h2 class="section-title">GALERIA DE CORTES</h2>
+        <p class="section-subtitle">Conheça nossos principais estilos e transformações</p>
+        
+        <div class="gallery-grid">
+            <div class="gallery-item fade-in">
+                <img src="img/Corte taper fade Americano.jpeg" alt="Taper Fade Americano">
+                <div class="gallery-overlay">
+                    <h3>Taper Fade Americano</h3>
+                    <p>Estilo americano moderno com degradê apenas no início da parte de trás</p>
+                </div>
+            </div>
+            
+            <div class="gallery-item fade-in">
+                <img src="img/Mid fade.jpeg" alt="Mid Fade">
+                <div class="gallery-overlay">
+                    <h3>Mid Fade</h3>
+                    <p>Sombreado gradual visível e marcado a partir da metade da cabeça</p>
+                </div>
+            </div>
+            
+            <div class="gallery-item fade-in">
+                <img src="img/High fadeDegradê alto.jpeg" alt="High Fade">
+                <div class="gallery-overlay">
+                    <h3>High Fade</h3>
+                    <p>Acabamentos versáteis: régua, freestyle, disfarçado, com listra e waves</p>
+                </div>
+            </div>
+            
+            <div class="gallery-item fade-in">
+                <img src="img/Social Clássico..jpeg" alt="Social Clássico">
+                <div class="gallery-overlay">
+                    <h3>Social Clássico</h3>
+                    <p>Elegância atemporal com linhas limpas e contornos precisos</p>
+                </div>
+            </div>
+            
+            <div class="gallery-item fade-in">
+                <img src="img/corte_social.jpeg" alt="Corte Social">
+                <div class="gallery-overlay">
+                    <h3>Corte Social</h3>
+                    <p>Modelo tradicional perfeito para todas as ocasiões</p>
+                </div>
+            </div>
+            
+            <div class="gallery-item fade-in">
+                <img src="img/Corte infantil.jpeg" alt="Corte Infantil Especializado">
+                <div class="gallery-overlay">
+                    <h3>Corte Infantil</h3>
+                    <p>Atenção especial para aumentar a autoestima dos pequenos</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção Sobre -->
+    <section id="sobre" class="section">
+        <h2 class="section-title">NOSSA MISSÃO</h2>
+        
+        <div class="about-container">
+            <div class="about-text fade-in">
+                <h3>Excelência em cada corte</h3>
+                <p>Oferecer a nossos clientes através de um ambiente agradável, um bom atendimento com um serviço de qualidade, a fim de proporcionar o aumento da autoestima, em uma experiência única e pessoal.</p>
+                <p>Trabalhamos com profissionais qualificados e bons produtos para os cuidados da barba e cabelo, sempre priorizando a satisfação e bem-estar de nossos clientes.</p>
+                <a href="#servicos" class="btn">CONHEÇA NOSSOS SERVIÇOS</a>
+            </div>
+            
+            <div class="carousel-container fade-in">
+                <div class="carousel-wrapper">
+                    <div class="carousel-track" id="carouselTrack">
+                        <div class="carousel-slide active">
+                            <img src="img/proprietario.jpeg" alt="Samuel Abreu - Proprietário">
+                            <div class="carousel-caption">
+                                <h4>Samuel Abreu</h4>
+                                <p>Proprietário e Barbeiro Master</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/barbearia.jpeg" alt="Interior da Barbearia">
+                            <div class="carousel-caption">
+                                <h4>Nossa Barbearia</h4>
+                                <p>Ambiente acolhedor e moderno</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/proprietario 2.jpeg" alt="Samuel Abreu Trabalhando">
+                            <div class="carousel-caption">
+                                <h4>Profissionalismo</h4>
+                                <p>11 anos de experiência</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/pro1.jpeg" alt="Ambiente da Barbearia">
+                            <div class="carousel-caption">
+                                <h4>Estrutura</h4>
+                                <p>Equipamentos modernos</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/pro2.jpeg" alt="Trabalho em Andamento">
+                            <div class="carousel-caption">
+                                <h4>Dedicação</h4>
+                                <p>Atenção aos detalhes</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/pro3.jpeg" alt="Cliente Satisfeito">
+                            <div class="carousel-caption">
+                                <h4>Resultados</h4>
+                                <p>Clientes satisfeitos</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/kaioUm.jpeg" alt="Kaio - Barbeiro">
+                            <div class="carousel-caption">
+                                <h4>Kaio</h4>
+                                <p>Barbeiro Profissional</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/kaioDois.jpeg" alt="Kaio Trabalhando">
+                            <div class="carousel-caption">
+                                <h4>Equipe Qualificada</h4>
+                                <p>Experiência e talento</p>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="img/samu.jpeg" alt="Samuel em Ação">
+                            <div class="carousel-caption">
+                                <h4>Mestre Samuel</h4>
+                                <p>Arte e precisão</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controles do Carrossel -->
+                    <button class="carousel-btn carousel-btn-prev" id="prevBtn">
+                        <span>&#8249;</span>
+                    </button>
+                    <button class="carousel-btn carousel-btn-next" id="nextBtn">
+                        <span>&#8250;</span>
+                    </button>
+                    
+                    <!-- Indicadores -->
+                    <div class="carousel-indicators" id="carouselIndicators">
+                        <button class="indicator active" data-slide="0"></button>
+                        <button class="indicator" data-slide="1"></button>
+                        <button class="indicator" data-slide="2"></button>
+                        <button class="indicator" data-slide="3"></button>
+                        <button class="indicator" data-slide="4"></button>
+                        <button class="indicator" data-slide="5"></button>
+                        <button class="indicator" data-slide="6"></button>
+                        <button class="indicator" data-slide="7"></button>
+                        <button class="indicator" data-slide="8"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Horários -->
+    <section class="section">
+        <div class="horarios-container fade-in">
+            <h2 class="section-title">HORÁRIO DE FUNCIONAMENTO</h2>
+            <table class="modern-horario-table">
+                <thead>
+                    <tr>
+                        <th>Dia</th>
+                        <th>Horário</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Segunda à Sexta</td>
+                        <td>08:00 às 12:00<br>14:00 às 18:50</td>
+                    </tr>
+                    <tr>
+                        <td>Sábado</td>
+                        <td>08:00 às 12:00<br>14:00 às 17:30</td>
+                    </tr>
+                    <tr>
+                        <td>Domingo</td>
+                        <td>Fechado</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- WhatsApp Float Button -->
+    <a href="https://wa.link/19u2v4" target="_blank" class="whatsapp-float">
+        <img src="img/icon_whatssap.png" alt="WhatsApp">
+    </a>
+
+    <!-- Footer Moderno -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>Contato</h3>
+                <p>📍 R. Marieta Barreira, 810<br>Sabiaguaba, Fortaleza - CE</p>
+                <p>📞 Telefone via WhatsApp</p>
+                <p>📧 Email para agendamentos</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Serviços</h3>
+                <p><a href="#servicos">Cabelo e Barba</a></p>
+                <p><a href="#servicos">Cortes Modernos</a></p>
+                <p><a href="#servicos">Pigmentação</a></p>
+                <p><a href="#servicos">Sobrancelha</a></p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Navegação</h3>
+                <p><a href="#home">Início</a></p>
+                <p><a href="#servicos">Serviços</a></p>
+                <p><a href="#cortes">Galeria</a></p>
+                <p><a href="contatos.html">Contatos</a></p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Redes Sociais</h3>
+                <div class="social-icons">
+                    <a href="https://www.instagram.com/barbearia_samuel_abreu/" target="_blank">
+                        <img src="img/insta.png" alt="Instagram">
+                    </a>
+                    <a href="https://www.facebook.com/profile.php?id=100009466104944" target="_blank">
+                        <img src="img/face (1).png" alt="Facebook">
+                    </a>
+                </div>
+                <p>Formas de Pagamento:</p>
+                <div class="payment-icons">
+                    <img src="img/mastercard_payment_method_icon_142750.png" alt="Mastercard">
+                    <img src="img/elo_payment_method_card_icon_142740.png" alt="Elo">
+                    <img src="img/businesspaymentcard_paymentcard_visa_negocio_pag_2339.png" alt="Visa">
+                    <img src="img/hipercard_payment_method_card_icon_142739.png" alt="Hipercard">
+                    <img src="img/pix.jpg" alt="PIX">
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2025 Barbearia Samuel Abreu. Todos os direitos reservados.</p>
+            <p><i>Site criado por: <a href="https://www.instagram.com/mateusprodev/" target="_blank">Mateus Ferreira</a></i></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    
+    <!-- Firebase SDK (opcional - para sincronização de conteúdo) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Sistema de Sincronização de Conteúdo -->
+    <script src="content-sync.js"></script>
+    
+    <!-- Preloader Script -->
+    <script>
+        // Controle do Preloader
+        window.addEventListener('load', function() {
+            const preloader = document.getElementById('preloader');
+            
+            // Garantir que o preloader seja exibido por pelo menos 1 segundo
+            setTimeout(() => {
+                preloader.classList.add('fade-out');
+                
+                // Remover o preloader do DOM após a animação
+                setTimeout(() => {
+                    if (preloader && preloader.parentNode) {
+                        preloader.parentNode.removeChild(preloader);
+                    }
+                }, 500);
+            }, 1000);
+        });
+        
+        // Analytics de performance
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'page_load_time', {
+                custom_parameter: 'barbearia_samuel_abreu'
+            });
+        }
+        
+        // Service Worker para cache (se disponível)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // Registrar service worker apenas em produção
+                console.log('Service Worker disponível para implementação futura');
+            });
+        }
+    </script>
+
+    <!-- Firebase Scripts para Sincronização de Imagens -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    
+    <script>
+        // Configuração Firebase (mesma do dashboard)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <!-- Sistema de Sincronização de Imagens -->
+    <script src="site-image-sync.js"></script>
+</body>
+</html>

@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard administrativo da Barbearia Samuel Abreu">
+    <link rel="stylesheet" href="style.css">
+    <title>Dashboard Admin - Barbearia Samuel Abreu</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* Estilos específicos para o dashboard */
+        .dashboard-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #1a1a1a 100%);
+            padding-top: 100px;
+        }
+        
+        .dashboard-header {
+            background: var(--card-bg);
+            padding: 30px 40px;
+            margin-bottom: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-subtitle {
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+        
+        .dashboard-nav {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: var(--bg-color);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(212, 175, 55, 0.3);
+        }
+        
+        .nav-btn.logout {
+            background: linear-gradient(45deg, #ff4444, #cc3333);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .dashboard-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            transition: var(--transition);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(212, 175, 55, 0.2);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .card-content {
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .profile-section {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--bg-color);
+            margin-right: 20px;
+        }
+        
+        .profile-info h3 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .profile-info p {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .profile-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .detail-value {
+            color: var(--text-color);
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .action-btn {
+            padding: 20px;
+            background: var(--card-bg);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: var(--border-radius);
+            color: var(--text-color);
+            text-decoration: none;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .action-btn:hover {
+            border-color: var(--primary-color);
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .action-btn i {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        /* Estilos para Modais */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            padding: 30px 40px 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close-btn:hover {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .modal-body {
+            padding: 20px 40px 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: 'Poppins', sans-serif;
+            resize: vertical;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .form-input::placeholder {
+            color: rgba(245, 245, 245, 0.5);
+        }
+        
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .save-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: var(--bg-color);
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+        }
+        
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .loading-content {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(212, 175, 55, 0.3);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        .loading-text {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding-top: 120px;
+            }
+            
+            .dashboard-header {
+                padding: 20px;
+            }
+            
+            .dashboard-title {
+                font-size: 2rem;
+            }
+            
+            .dashboard-nav {
+                gap: 10px;
+            }
+            
+            .nav-btn {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+            }
+            
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .profile-avatar {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <a href="index.html"><img src="img/logo_barber.png" alt="Logo Barbearia Samuel Abreu"></a>
+            </div>
+            <nav>
+                <div class="barbearia">
+                    <div class="line"></div>
+                    <div class="line"></div>
+                    <div class="line"></div>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">SITE</a></li>
+                    <li><a href="#perfil">PERFIL</a></li>
+                    <li><a href="#configuracoes">CONFIGURAÇÕES</a></li>
+                    <li><a href="#" onclick="logout()">SAIR</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <div class="section">
+            <!-- Header do Dashboard -->
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard Administrativo</h1>
+                <p class="dashboard-subtitle">Bem-vindo ao painel de controle da Barbearia Samuel Abreu</p>
+                
+                <div class="dashboard-nav">
+                    <a href="#perfil" class="nav-btn">👤 Perfil</a>
+                    <a href="#agendamentos" class="nav-btn">📅 Agendamentos</a>
+                    <a href="#clientes" class="nav-btn">👥 Clientes</a>
+                    <a href="#financeiro" class="nav-btn">💰 Financeiro</a>
+                    <a href="#imagens" class="nav-btn">🖼️ Gerenciar Imagens</a>
+                    <a href="#configuracoes" class="nav-btn">⚙️ Configurações</a>
+                    <a href="#" onclick="logout()" class="nav-btn logout">🚪 Sair</a>
+                </div>
+            </div>
+
+            <!-- Estatísticas -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalClientes">127</div>
+                    <div class="stat-label">Clientes Ativos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="agendamentosHoje">8</div>
+                    <div class="stat-label">Agendamentos Hoje</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="receitaMes">R$ 3.240</div>
+                    <div class="stat-label">Receita do Mês</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avaliacaoMedia">4.9</div>
+                    <div class="stat-label">Avaliação Média</div>
+                </div>
+            </div>
+
+            <!-- Seção do Perfil -->
+            <section id="perfil" class="profile-section">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="userAvatar">S</div>
+                    <div class="profile-info">
+                        <h3 id="userName">Samuel Abreu</h3>
+                        <p id="userRole">Proprietário & Barbeiro Master</p>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div>
+                        <div class="detail-item">
+                            <span class="detail-label">Email:</span>
+                            <span class="detail-value" id="userEmail">samuel@barbearia.com</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Telefone:</span>
+                            <span class="detail-value" id="userPhone">(85) 8505-3792</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Experiência:</span>
+                            <span class="detail-value">11 anos</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="detail-item">
+                            <span class="detail-label">Último Login:</span>
+                            <span class="detail-value" id="lastLogin">Hoje, 08:30</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value" style="color: #25D366;">Online</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Permissões:</span>
+                            <span class="detail-value">Administrador</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção de Gerenciamento de Imagens -->
+            <section id="imagens" class="image-management-section" style="display: none;">
+                <div class="section-header">
+                    <h2>🖼️ Gerenciamento de Imagens</h2>
+                    <p>Gerencie as imagens do site, portfólio e galeria</p>
+                </div>
+
+                <!-- Navegação das Categorias de Imagens -->
+                <div class="image-categories">
+                    <button class="category-btn active" onclick="showImageCategory('portfolio')">
+                        <i>💼</i> Portfólio
+                    </button>
+                    <button class="category-btn" onclick="showImageCategory('galeria')">
+                        <i>🖼️</i> Galeria
+                    </button>
+                    <button class="category-btn" onclick="showImageCategory('equipe')">
+                        <i>👥</i> Equipe
+                    </button>
+                    <button class="category-btn" onclick="showImageCategory('instalacoes')">
+                        <i>🏪</i> Instalações
+                    </button>
+                </div>
+
+                <!-- Container para cada categoria -->
+                <div id="portfolio" class="image-category-content active">
+                    <div class="category-header">
+                        <h3>Portfólio de Trabalhos</h3>
+                        <button class="add-image-btn" onclick="openImageUpload('portfolio')">
+                            <i>➕</i> Adicionar Imagem
+                        </button>
+                    </div>
+                    <div class="images-grid" id="portfolio-images">
+                        <!-- Imagens serão carregadas dinamicamente -->
+                    </div>
+                </div>
+
+                <div id="galeria" class="image-category-content">
+                    <div class="category-header">
+                        <h3>Galeria Geral</h3>
+                        <button class="add-image-btn" onclick="openImageUpload('galeria')">
+                            <i>➕</i> Adicionar Imagem
+                        </button>
+                    </div>
+                    <div class="images-grid" id="galeria-images">
+                        <!-- Imagens serão carregadas dinamicamente -->
+                    </div>
+                </div>
+
+                <div id="equipe" class="image-category-content">
+                    <div class="category-header">
+                        <h3>Fotos da Equipe</h3>
+                        <button class="add-image-btn" onclick="openImageUpload('equipe')">
+                            <i>➕</i> Adicionar Imagem
+                        </button>
+                    </div>
+                    <div class="images-grid" id="equipe-images">
+                        <!-- Imagens serão carregadas dinamicamente -->
+                    </div>
+                </div>
+
+                <div id="instalacoes" class="image-category-content">
+                    <div class="category-header">
+                        <h3>Fotos das Instalações</h3>
+                        <button class="add-image-btn" onclick="openImageUpload('instalacoes')">
+                            <i>➕</i> Adicionar Imagem
+                        </button>
+                    </div>
+                    <div class="images-grid" id="instalacoes-images">
+                        <!-- Imagens serão carregadas dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Modal para Upload de Imagem -->
+                <div class="modal" id="imageUploadModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 id="uploadModalTitle">📤 Adicionar Nova Imagem</h2>
+                            <button class="close-btn" onclick="closeImageUploadModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="imageUploadForm">
+                                <div class="upload-area" id="uploadArea">
+                                    <div class="upload-icon">📁</div>
+                                    <p>Arraste uma imagem aqui ou clique para selecionar</p>
+                                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                                    <button type="button" class="select-file-btn" onclick="document.getElementById('imageInput').click()">
+                                        Selecionar Arquivo
+                                    </button>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Título da Imagem</label>
+                                    <input type="text" id="imageTitle" class="form-input" placeholder="Digite um título para a imagem">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Descrição (opcional)</label>
+                                    <textarea id="imageDescription" class="form-input" rows="3" placeholder="Descrição da imagem"></textarea>
+                                </div>
+
+                                <div class="image-preview" id="imagePreview" style="display: none;">
+                                    <img id="previewImg" src="" alt="Preview">
+                                    <div class="preview-info">
+                                        <span id="previewFileName"></span>
+                                        <span id="previewFileSize"></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="progressFill"></div>
+                                    </div>
+                                    <span id="progressText">0%</span>
+                                </div>
+                                
+                                <button type="submit" class="save-btn" id="uploadBtn">
+                                    <i>☁️</i> Fazer Upload
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal para Editar Imagem -->
+                <div class="modal" id="imageEditModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>✏️ Editar Imagem</h2>
+                            <button class="close-btn" onclick="closeImageEditModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="imageEditForm">
+                                <div class="current-image">
+                                    <img id="editImagePreview" src="" alt="Imagem atual">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Título da Imagem</label>
+                                    <input type="text" id="editImageTitle" class="form-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Descrição</label>
+                                    <textarea id="editImageDescription" class="form-input" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="submit" class="save-btn">
+                                        <i>💾</i> Salvar Alterações
+                                    </button>
+                                    <button type="button" class="delete-btn" onclick="deleteImage()">
+                                        <i>🗑️</i> Excluir Imagem
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cards do Dashboard -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-icon">📝</div>
+                        <h3 class="card-title">Editar Conteúdo</h3>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Site:</strong> Título, descrição, textos</p>
+                        <p><strong>Sobre:</strong> Missão e informações</p>
+                        <button class="action-btn" onclick="openContentEditor()">
+                            ✏️ Editar Conteúdo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-icon">🕒</div>
+                        <h3 class="card-title">Horários</h3>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Funcionamento:</strong> Seg-Sáb</p>
+                        <p><strong>Status:</strong> Atualizado</p>
+                        <button class="action-btn" onclick="openScheduleEditor()">
+                            🕒 Editar Horários
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-icon">📍</div>
+                        <h3 class="card-title">Endereço & Contato</h3>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Local:</strong> Sabiaguaba, Fortaleza</p>
+                        <p><strong>WhatsApp:</strong> Configurado</p>
+                        <button class="action-btn" onclick="openContactEditor()">
+                            📍 Editar Contato
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div class="card-icon">⭐</div>
+                        <h3 class="card-title">Avaliações</h3>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Média:</strong> 4.9/5.0 estrelas</p>
+                        <p><strong>Total:</strong> 89 avaliações</p>
+                        <p><strong>Recentes:</strong> 5 estrelas (último)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para Edição de Conteúdo -->
+            <div class="modal" id="contentModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📝 Editar Conteúdo do Site</h2>
+                        <button class="close-btn" onclick="closeModal('contentModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="contentForm">
+                            <div class="form-group">
+                                <label>Título Principal</label>
+                                <input type="text" id="siteTitle" class="form-input" placeholder="Barbearia Samuel Abreu">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Descrição Principal</label>
+                                <textarea id="siteDescription" class="form-input" rows="3" placeholder="11 anos renovando autoestimas..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Missão da Empresa</label>
+                                <textarea id="siteMission" class="form-input" rows="4" placeholder="Oferecer a nossos clientes..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Meta Description (SEO)</label>
+                                <textarea id="siteMetaDescription" class="form-input" rows="2" placeholder="Meta description para SEO"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="save-btn">💾 Salvar Alterações</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para Edição de Horários -->
+            <div class="modal" id="scheduleModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>🕒 Editar Horários de Funcionamento</h2>
+                        <button class="close-btn" onclick="closeModal('scheduleModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="scheduleForm">
+                            <div class="schedule-grid">
+                                <div class="form-group">
+                                    <label>Segunda à Sexta - Manhã</label>
+                                    <input type="text" id="weekdayMorning" class="form-input" placeholder="08:00 às 12:00">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Segunda à Sexta - Tarde</label>
+                                    <input type="text" id="weekdayAfternoon" class="form-input" placeholder="14:00 às 18:50">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Sábado - Manhã</label>
+                                    <input type="text" id="saturdayMorning" class="form-input" placeholder="08:00 às 12:00">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Sábado - Tarde</label>
+                                    <input type="text" id="saturdayAfternoon" class="form-input" placeholder="14:00 às 17:30">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Domingo</label>
+                                    <input type="text" id="sunday" class="form-input" placeholder="Fechado">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="save-btn">💾 Salvar Horários</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para Edição de Contato -->
+            <div class="modal" id="contactModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>📍 Editar Informações de Contato</h2>
+                        <button class="close-btn" onclick="closeModal('contactModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="contactForm">
+                            <div class="form-group">
+                                <label>Endereço Completo</label>
+                                <input type="text" id="address" class="form-input" placeholder="R. Marieta Barreira, 810">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Bairro</label>
+                                <input type="text" id="neighborhood" class="form-input" placeholder="Sabiaguaba">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Cidade - Estado</label>
+                                <input type="text" id="city" class="form-input" placeholder="Fortaleza - CE">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Link do WhatsApp</label>
+                                <input type="url" id="whatsappLink" class="form-input" placeholder="https://wa.link/19u2v4">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Instagram</label>
+                                <input type="url" id="instagram" class="form-input" placeholder="https://www.instagram.com/barbearia_samuel_abreu/">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Facebook</label>
+                                <input type="url" id="facebook" class="form-input" placeholder="https://www.facebook.com/profile.php?id=100009466104944">
+                            </div>
+                            
+                            <button type="submit" class="save-btn">💾 Salvar Contato</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">⚡</div>
+                    <h3 class="card-title">Ações Rápidas</h3>
+                </div>
+                <div class="quick-actions">
+                    <a href="#" class="action-btn" onclick="newAppointment()">
+                        <i>📅</i>
+                        Novo Agendamento
+                    </a>
+                    <a href="#" class="action-btn" onclick="addClient()">
+                        <i>👤</i>
+                        Cadastrar Cliente
+                    </a>
+                    <a href="#" class="action-btn" onclick="viewReports()">
+                        <i>📊</i>
+                        Relatórios
+                    </a>
+                    <a href="#" class="action-btn" onclick="manageServices()">
+                        <i>✂️</i>
+                        Gerenciar Serviços
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Salvando alterações...</div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        class AdminDashboard {
+            constructor() {
+                this.init();
+            }
+            
+            init() {
+                this.checkAuthentication();
+                this.loadUserData();
+                this.updateStats();
+                this.setupEventListeners();
+                this.loadContent();
+            }
+            
+            checkAuthentication() {
+                const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+                const adminSession = localStorage.getItem('adminSession');
+                
+                if (!isLoggedIn || !adminSession) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Verificar se a sessão não expirou (24 horas)
+                const session = JSON.parse(adminSession);
+                const loginTime = new Date(session.loginTime);
+                const now = new Date();
+                const hoursPassed = (now - loginTime) / (1000 * 60 * 60);
+                
+                if (hoursPassed > 24) {
+                    this.logout();
+                    return;
+                }
+            }
+            
+            async loadContent() {
+                try {
+                    // Carregar dados do Firebase
+                    const contentDoc = await db.collection('siteContent').doc('main').get();
+                    const scheduleDoc = await db.collection('siteContent').doc('schedule').get();
+                    const contactDoc = await db.collection('siteContent').doc('contact').get();
+                    
+                    if (contentDoc.exists) {
+                        const data = contentDoc.data();
+                        document.getElementById('siteTitle').value = data.title || '';
+                        document.getElementById('siteDescription').value = data.description || '';
+                        document.getElementById('siteMission').value = data.mission || '';
+                        document.getElementById('siteMetaDescription').value = data.metaDescription || '';
+                    }
+                    
+                    if (scheduleDoc.exists) {
+                        const data = scheduleDoc.data();
+                        document.getElementById('weekdayMorning').value = data.weekdayMorning || '';
+                        document.getElementById('weekdayAfternoon').value = data.weekdayAfternoon || '';
+                        document.getElementById('saturdayMorning').value = data.saturdayMorning || '';
+                        document.getElementById('saturdayAfternoon').value = data.saturdayAfternoon || '';
+                        document.getElementById('sunday').value = data.sunday || '';
+                    }
+                    
+                    if (contactDoc.exists) {
+                        const data = contactDoc.data();
+                        document.getElementById('address').value = data.address || '';
+                        document.getElementById('neighborhood').value = data.neighborhood || '';
+                        document.getElementById('city').value = data.city || '';
+                        document.getElementById('whatsappLink').value = data.whatsappLink || '';
+                        document.getElementById('instagram').value = data.instagram || '';
+                        document.getElementById('facebook').value = data.facebook || '';
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar dados:', error);
+                    this.showNotification('Erro ao carregar dados do servidor', 'error');
+                }
+            }
+            
+            async saveContent(formData, docId) {
+                this.showLoading();
+                try {
+                    await db.collection('siteContent').doc(docId).set(formData, { merge: true });
+                    this.showNotification('Dados salvos com sucesso!', 'success');
+                    
+                    // Atualizar o site em tempo real (se implementado)
+                    this.updateSiteContent(docId, formData);
+                } catch (error) {
+                    console.error('Erro ao salvar:', error);
+                    this.showNotification('Erro ao salvar dados', 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+            
+            updateSiteContent(docId, data) {
+                // Esta função seria usada para atualizar o conteúdo do site em tempo real
+                // Por enquanto, apenas salvamos no Firebase
+                console.log(`Conteúdo ${docId} atualizado:`, data);
+            }
+            
+            showLoading() {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            }
+            
+            hideLoading() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+            
+            showNotification(message, type) {
+                // Criar notificação toast
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.remove()">&times;</button>
+                `;
+                
+                // Adicionar estilos inline
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#25D366' : '#ff4444'};
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-weight: 600;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Remover após 5 segundos
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+            
+            loadUserData() {
+                const adminSession = localStorage.getItem('adminSession');
+                if (adminSession) {
+                    const session = JSON.parse(adminSession);
+                    const username = session.username;
+                    
+                    // Atualizar dados do usuário baseado no username
+                    const userAvatar = document.getElementById('userAvatar');
+                    const userName = document.getElementById('userName');
+                    const userRole = document.getElementById('userRole');
+                    const userEmail = document.getElementById('userEmail');
+                    const lastLogin = document.getElementById('lastLogin');
+                    
+                    if (userAvatar) userAvatar.textContent = username.charAt(0).toUpperCase();
+                    
+                    // Dados específicos por usuário
+                    const userData = this.getUserData(username);
+                    if (userName) userName.textContent = userData.name;
+                    if (userRole) userRole.textContent = userData.role;
+                    if (userEmail) userEmail.textContent = userData.email;
+                    if (lastLogin) lastLogin.textContent = this.formatLastLogin(session.loginTime);
+                }
+            }
+            
+            getUserData(username) {
+                const users = {
+                    'admin': {
+                        name: 'Administrador',
+                        role: 'Administrador do Sistema',
+                        email: 'admin@barbearia.com'
+                    },
+                    'samuel': {
+                        name: 'Samuel Abreu',
+                        role: 'Proprietário & Barbeiro Master',
+                        email: 'samuel@barbearia.com'
+                    },
+                    'kaio': {
+                        name: 'Kaio',
+                        role: 'Barbeiro Profissional',
+                        email: 'kaio@barbearia.com'
+                    }
+                };
+                
+                return users[username] || users['admin'];
+            }
+            
+            formatLastLogin(loginTime) {
+                const date = new Date(loginTime);
+                const now = new Date();
+                const diffMinutes = Math.floor((now - date) / (1000 * 60));
+                
+                if (diffMinutes < 60) {
+                    return `${diffMinutes} minutos atrás`;
+                } else if (diffMinutes < 1440) {
+                    const hours = Math.floor(diffMinutes / 60);
+                    return `${hours} hora${hours > 1 ? 's' : ''} atrás`;
+                } else {
+                    return date.toLocaleDateString('pt-BR') + ' às ' + date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                }
+            }
+            
+            updateStats() {
+                // Simular dados dinâmicos
+                const stats = {
+                    totalClientes: Math.floor(Math.random() * 50) + 100,
+                    agendamentosHoje: Math.floor(Math.random() * 10) + 5,
+                    receitaMes: 'R$ ' + (Math.floor(Math.random() * 2000) + 2000).toLocaleString('pt-BR'),
+                    avaliacaoMedia: (4.5 + Math.random() * 0.5).toFixed(1)
+                };
+                
+                Object.keys(stats).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.textContent = stats[key];
+                    }
+                });
+            }
+            
+            setupEventListeners() {
+                // Formulário de conteúdo
+                document.getElementById('contentForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = {
+                        title: document.getElementById('siteTitle').value,
+                        description: document.getElementById('siteDescription').value,
+                        mission: document.getElementById('siteMission').value,
+                        metaDescription: document.getElementById('siteMetaDescription').value,
+                        updatedAt: new Date()
+                    };
+                    await this.saveContent(formData, 'main');
+                    closeModal('contentModal');
+                });
+                
+                // Formulário de horários
+                document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = {
+                        weekdayMorning: document.getElementById('weekdayMorning').value,
+                        weekdayAfternoon: document.getElementById('weekdayAfternoon').value,
+                        saturdayMorning: document.getElementById('saturdayMorning').value,
+                        saturdayAfternoon: document.getElementById('saturdayAfternoon').value,
+                        sunday: document.getElementById('sunday').value,
+                        updatedAt: new Date()
+                    };
+                    await this.saveContent(formData, 'schedule');
+                    closeModal('scheduleModal');
+                });
+                
+                // Formulário de contato
+                document.getElementById('contactForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = {
+                        address: document.getElementById('address').value,
+                        neighborhood: document.getElementById('neighborhood').value,
+                        city: document.getElementById('city').value,
+                        whatsappLink: document.getElementById('whatsappLink').value,
+                        instagram: document.getElementById('instagram').value,
+                        facebook: document.getElementById('facebook').value,
+                        updatedAt: new Date()
+                    };
+                    await this.saveContent(formData, 'contact');
+                    closeModal('contactModal');
+                });
+                
+                // Scroll suave para âncoras
+                document.querySelectorAll('a[href^="#"]').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = link.getAttribute('href').substring(1);
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    });
+                });
+            }
+            
+            logout() {
+                sessionStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('adminSession');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Funções globais para modais
+        function openContentEditor() {
+            document.getElementById('contentModal').style.display = 'block';
+        }
+        
+        function openScheduleEditor() {
+            document.getElementById('scheduleModal').style.display = 'block';
+        }
+        
+        function openContactEditor() {
+            document.getElementById('contactModal').style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+        
+        // Funções globais para ações rápidas
+        function logout() {
+            if (confirm('Tem certeza que deseja sair?')) {
+                new AdminDashboard().logout();
+            }
+        }
+        
+        function newAppointment() {
+            alert('Funcionalidade em desenvolvimento: Novo Agendamento');
+        }
+        
+        function addClient() {
+            alert('Funcionalidade em desenvolvimento: Cadastrar Cliente');
+        }
+        
+        function viewReports() {
+            alert('Funcionalidade em desenvolvimento: Relatórios');
+        }
+        
+        function manageServices() {
+            alert('Funcionalidade em desenvolvimento: Gerenciar Serviços');
+        }
+        
+        // Inicializar dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdminDashboard();
+        });
+    </script>
+</body>
+</html>
