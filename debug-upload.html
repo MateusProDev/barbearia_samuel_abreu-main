@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .debug-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="file"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #debug-log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🛠️ Debug Upload Sistema</h1>
+        
+        <div id="debug-log"></div>
+        
+        <h2>Teste de Upload</h2>
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="image-file">Imagem:</label>
+                <input type="file" id="image-file" name="image-file" accept="image/*" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="title">Título:</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Descrição:</label>
+                <textarea id="description" name="description"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="section">Seção:</label>
+                <select id="section" name="section" required>
+                    <option value="">Selecione...</option>
+                    <option value="cortes-masculinos">Cortes Masculinos</option>
+                    <option value="cortes-infantis">Cortes Infantis</option>
+                    <option value="barbas">Barbas</option>
+                    <option value="produtos">Produtos</option>
+                </select>
+            </div>
+            
+            <div class="progress-bar" id="upload-progress" style="display: none;">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            
+            <button type="submit">🚀 Testar Upload</button>
+        </form>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-compat-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-compat-firestore.js"></script>
+
+    <script>
+        // Função de log para debug
+        function debugLog(message) {
+            const logElement = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_W3VHvmQKHDjTr6y8o4rz1YaHUKFGFkU",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.appspot.com",
+            messagingSenderId: "592481178343",
+            appId: "1:592481178343:web:10a20b8bf6b9b00f9f3e1f"
+        };
+
+        debugLog('🔥 Inicializando Firebase...');
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        debugLog('✅ Firebase inicializado');
+
+        // Cloudinary Upload Function
+        async function uploadToCloudinary(file, progressCallback) {
+            debugLog('📤 Iniciando upload para Cloudinary...');
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", "qc7tkpck");
+            formData.append("cloud_name", "doeiv6m4h");
+
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable && progressCallback) {
+                        const progress = Math.round((e.loaded / e.total) * 100);
+                        progressCallback(progress);
+                        debugLog(`📊 Progresso: ${progress}%`);
+                    }
+                });
+
+                xhr.onload = function() {
+                    debugLog(`📡 Resposta Cloudinary: Status ${xhr.status}`);
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        debugLog(`✅ Upload Cloudinary sucesso: ${response.secure_url}`);
+                        resolve(response);
+                    } else {
+                        debugLog(`❌ Erro Cloudinary: ${xhr.responseText}`);
+                        reject(new Error('Erro ao fazer upload da imagem'));
+                    }
+                };
+
+                xhr.onerror = function() {
+                    debugLog('❌ Erro de conexão durante upload');
+                    reject(new Error('Erro de conexão durante o upload'));
+                };
+
+                debugLog('📡 Enviando para https://api.cloudinary.com/v1_1/doeiv6m4h/image/upload');
+                xhr.open('POST', 'https://api.cloudinary.com/v1_1/doeiv6m4h/image/upload');
+                xhr.send(formData);
+            });
+        }
+
+        // Validação de imagem
+        function validateImage(file) {
+            return new Promise((resolve, reject) => {
+                debugLog(`🔍 Validando arquivo: ${file.name} (${file.size} bytes)`);
+                
+                if (!file.type.startsWith('image/')) {
+                    debugLog('❌ Arquivo não é uma imagem');
+                    reject(new Error('Arquivo deve ser uma imagem'));
+                    return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    debugLog('❌ Arquivo muito grande (>5MB)');
+                    reject(new Error('Imagem deve ter no máximo 5MB'));
+                    return;
+                }
+
+                debugLog('✅ Arquivo válido');
+                resolve();
+            });
+        }
+
+        // Salvar no Firebase
+        async function saveToFirebase(imageData) {
+            debugLog('💾 Salvando no Firebase...');
+            try {
+                const docRef = await db.collection('images').add({
+                    ...imageData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    active: true
+                });
+                debugLog(`✅ Salvo no Firebase com ID: ${docRef.id}`);
+                return docRef.id;
+            } catch (error) {
+                debugLog(`❌ Erro ao salvar no Firebase: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // Upload principal
+        async function uploadImage(event) {
+            event.preventDefault();
+            debugLog('🚀 INICIANDO PROCESSO DE UPLOAD');
+            
+            try {
+                const formData = new FormData(event.target);
+                const file = formData.get('image-file');
+                const title = formData.get('title');
+                const description = formData.get('description');
+                const section = formData.get('section');
+                
+                debugLog(`📝 Dados: título="${title}", seção="${section}"`);
+
+                if (!file || !title || !section) {
+                    debugLog('❌ Campos obrigatórios não preenchidos');
+                    alert('❌ Preencha todos os campos obrigatórios');
+                    return;
+                }
+
+                // Validar imagem
+                await validateImage(file);
+
+                // Mostrar progresso
+                const progressElement = document.getElementById('upload-progress');
+                const progressFill = document.getElementById('progress-fill');
+                progressElement.style.display = 'block';
+
+                // Upload para Cloudinary
+                const result = await uploadToCloudinary(file, (progress) => {
+                    progressFill.style.width = progress + '%';
+                });
+
+                // Salvar no Firebase
+                const firebaseId = await saveToFirebase({
+                    url: result.secure_url,
+                    title: title,
+                    description: description,
+                    section: section,
+                    cloudinaryId: result.public_id,
+                    alt: title
+                });
+
+                debugLog('🎉 UPLOAD COMPLETADO COM SUCESSO!');
+                alert('✅ Imagem enviada com sucesso!');
+
+                // Reset
+                event.target.reset();
+                progressElement.style.display = 'none';
+                progressFill.style.width = '0%';
+
+            } catch (error) {
+                debugLog(`💥 ERRO NO UPLOAD: ${error.message}`);
+                console.error('Erro completo:', error);
+                alert('❌ Erro ao fazer upload: ' + error.message);
+                
+                document.getElementById('upload-progress').style.display = 'none';
+                document.getElementById('progress-fill').style.width = '0%';
+            }
+        }
+
+        // Auth check
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                debugLog(`👤 Usuário autenticado: ${user.email}`);
+            } else {
+                debugLog('⚠️ Usuário não autenticado - alguns recursos podem não funcionar');
+            }
+        });
+
+        // Event listener
+        document.getElementById('uploadForm').addEventListener('submit', uploadImage);
+
+        debugLog('🎯 Sistema de debug carregado e pronto');
+    </script>
+</body>
+</html>
