@@ -33,13 +33,52 @@ class SiteImageSync {
 
         const db = firebase.firestore();
 
-        // Listener para mudanças nas imagens
+        // Listener para mudanças nas imagens com detalhes
         db.collection('images').onSnapshot((snapshot) => {
-            console.log('🔄 Imagens atualizadas no Firebase - aplicando mudanças...');
-            this.updateSiteImages();
+            console.log('� Mudanças detectadas no Firebase - atualizando site...');
+            
+            snapshot.docChanges().forEach((change) => {
+                const data = change.doc.data();
+                const docId = change.doc.id;
+                
+                if (change.type === 'added') {
+                    console.log('➕ Nova imagem detectada no site:', data.title);
+                }
+                if (change.type === 'modified') {
+                    console.log('✏️ Imagem modificada no site:', data.title);
+                }
+                if (change.type === 'removed') {
+                    console.log('🗑️ Imagem removida no site:', docId);
+                }
+            });
+            
+            // Atualizar site com pequeno delay para evitar updates múltiplos
+            this.debounceUpdate();
         }, (error) => {
-            console.error('❌ Erro no listener Firebase:', error);
+            console.error('❌ Erro no listener Firebase (site):', error);
         });
+
+        // Listener para mudanças via localStorage (comunicação com dashboard)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'firebase_images_updated') {
+                console.log('🔄 Sincronização solicitada via localStorage');
+                this.updateSiteImages();
+            }
+        });
+
+        // Listener para eventos customizados
+        window.addEventListener('firebaseImagesUpdated', (e) => {
+            console.log('🔄 Evento customizado de sincronização recebido');
+            this.updateSiteImages();
+        });
+    }
+
+    // Debounce para evitar updates excessivos
+    debounceUpdate() {
+        clearTimeout(this.updateTimeout);
+        this.updateTimeout = setTimeout(() => {
+            this.updateSiteImages();
+        }, 1000);
     }
 
     // Método público para atualizar imagens

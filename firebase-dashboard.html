@@ -1249,7 +1249,59 @@
         class ImageManager {
             constructor() {
                 this.setupDragAndDrop();
+                this.setupRealtimeSync();
                 this.loadImages();
+            }
+
+            // Configurar sincronização em tempo real
+            setupRealtimeSync() {
+                console.log('🔄 Configurando sincronização em tempo real...');
+                
+                // Listener para mudanças na coleção de imagens
+                db.collection('images').onSnapshot((snapshot) => {
+                    console.log('📡 Mudança detectada na coleção de imagens!');
+                    
+                    snapshot.docChanges().forEach((change) => {
+                        const data = change.doc.data();
+                        const docId = change.doc.id;
+                        
+                        if (change.type === 'added') {
+                            console.log('➕ Nova imagem adicionada:', data.title);
+                        }
+                        if (change.type === 'modified') {
+                            console.log('✏️ Imagem modificada:', data.title);
+                        }
+                        if (change.type === 'removed') {
+                            console.log('🗑️ Imagem removida:', docId);
+                        }
+                    });
+                    
+                    // Recarregar imagens automaticamente
+                    setTimeout(() => {
+                        this.loadImages();
+                        this.notifyExternalSync();
+                    }, 500);
+                }, (error) => {
+                    console.error('❌ Erro no listener de sincronização:', error);
+                });
+            }
+
+            // Notificar sistema externo (site) sobre mudanças
+            notifyExternalSync() {
+                // Tentar notificar o site se estiver aberto
+                try {
+                    // Usar localStorage como ponte de comunicação
+                    localStorage.setItem('firebase_images_updated', Date.now().toString());
+                    
+                    // Disparar evento personalizado
+                    window.dispatchEvent(new CustomEvent('firebaseImagesUpdated', {
+                        detail: { timestamp: Date.now() }
+                    }));
+                    
+                    console.log('📡 Notificação de sincronização enviada');
+                } catch (error) {
+                    console.warn('⚠️ Não foi possível notificar sistema externo:', error);
+                }
             }
 
             // Função para upload no Cloudinary
@@ -1341,10 +1393,8 @@
                         }
                     });
                     
-                    // Carregar APENAS imagens do Firebase
+                    // Carregar TODAS as imagens do Firebase (sem filtros complexos)
                     const snapshot = await db.collection('images')
-                        .where('active', '!=', false)
-                        .orderBy('active')
                         .orderBy('createdAt', 'desc')
                         .get();
                     
@@ -1360,7 +1410,10 @@
                         const data = doc.data();
                         const section = data.section || 'gallery';
                         
-                        if (firebaseImages[section]) {
+                        // Verificar se a imagem está ativa (se não tiver campo active, considerar ativa)
+                        const isActive = data.active !== false;
+                        
+                        if (isActive && firebaseImages[section]) {
                             firebaseImages[section].push({
                                 id: doc.id,
                                 source: 'firebase',
@@ -1386,8 +1439,8 @@
                 } catch (error) {
                     console.error('❌ Erro ao carregar imagens:', error);
                     
-                    // Se falhar, mostrar mensagem de erro
-                    this.renderError('Erro ao carregar imagens do Firebase');
+                    // Se falhar, mostrar mensagem de erro mais detalhada
+                    this.renderError('Erro ao carregar imagens: ' + error.message);
                 }
             }
 
@@ -2446,6 +2499,9 @@
                 }
             });
             
+            // Testar conectividade Firebase
+            testFirebaseConnection();
+            
             // Forçar recarregamento completo das imagens
             if (dashboard && dashboard.imageManager) {
                 console.log('🔄 Forçando recarregamento das imagens...');
@@ -2468,6 +2524,26 @@
                 console.log('✅ Refresh completo executado');
                 dashboard.showNotification('✅ Dashboard atualizado! Mostrando apenas imagens do Firebase.', 'success');
             }, 2000);
+        }
+
+        // Testar conectividade Firebase
+        async function testFirebaseConnection() {
+            try {
+                console.log('🔗 Testando conectividade Firebase...');
+                
+                const testQuery = await db.collection('images').limit(1).get();
+                
+                if (testQuery.empty) {
+                    console.warn('⚠️ Coleção "images" está vazia');
+                    dashboard.showNotification('⚠️ Nenhuma imagem encontrada no Firebase', 'warning');
+                } else {
+                    console.log('✅ Firebase conectado - ' + testQuery.size + ' imagem(ns) encontrada(s)');
+                    dashboard.showNotification('✅ Firebase conectado com sucesso', 'success');
+                }
+            } catch (error) {
+                console.error('❌ Erro na conectividade Firebase:', error);
+                dashboard.showNotification('❌ Erro de conectividade: ' + error.message, 'error');
+            }
         }
 
         async function logout() {
