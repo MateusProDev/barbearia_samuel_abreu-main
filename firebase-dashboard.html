@@ -1192,6 +1192,9 @@
                         <button class="action-btn" onclick="forceRefreshDashboard(); closeModal('initializationModal');" style="background: linear-gradient(45deg, #2196F3, #1976D2);">
                             🔄 Atualizar Dashboard
                         </button>
+                        <button class="action-btn" onclick="reorganizeImages()" style="background: linear-gradient(45deg, #FF9800, #F57C00);">
+                            📋 Reorganizar Imagens
+                        </button>
                         <button class="action-btn" onclick="window.open('https://barbeariasamuelabreu.com.br/', '_blank')" style="background: linear-gradient(45deg, #4CAF50, #45a049);">
                             👀 Verificar Site
                         </button>
@@ -1379,10 +1382,10 @@
                 }
             }
 
-            // Carregar imagens APENAS do Firebase (sem imagens estáticas)
+            // Carregar imagens EXATAMENTE como o site (query idêntica)
             async loadImages() {
                 try {
-                    console.log('🔄 Carregando imagens do Firebase...');
+                    console.log('🔄 Carregando imagens do Firebase (query idêntica ao site)...');
                     
                     // Limpar qualquer cache antigo
                     const sections = ['hero', 'services', 'gallery', 'team'];
@@ -1393,7 +1396,62 @@
                         }
                     });
                     
-                    // Carregar TODAS as imagens do Firebase (sem filtros complexos)
+                    // QUERY IDÊNTICA AO SITE - exatamente a mesma que site-image-sync.js usa
+                    const snapshot = await db.collection('images')
+                        .where('active', '!=', false)
+                        .orderBy('active')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    
+                    const firebaseImages = {
+                        hero: [],
+                        services: [],
+                        gallery: [],
+                        team: []
+                    };
+
+                    let totalLoaded = 0;
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const section = data.section || 'gallery';
+                        
+                        if (firebaseImages[section]) {
+                            firebaseImages[section].push({
+                                id: doc.id,
+                                source: 'firebase',
+                                ...data
+                            });
+                            totalLoaded++;
+                        }
+                    });
+
+                    console.log(`📊 Total de imagens Firebase carregadas: ${totalLoaded}`);
+                    console.log('📋 Imagens por seção (idênticas ao site):', {
+                        hero: firebaseImages.hero.length,
+                        services: firebaseImages.services.length,
+                        gallery: firebaseImages.gallery.length,
+                        team: firebaseImages.team.length
+                    });
+
+                    // Renderizar EXATAMENTE as mesmas imagens que aparecem no site
+                    this.renderImages(firebaseImages);
+                    this.updateImageCount(totalLoaded);
+                    
+                    console.log('✅ Dashboard sincronizado com as mesmas imagens do site!');
+                } catch (error) {
+                    console.error('❌ Erro ao carregar imagens:', error);
+                    
+                    // Se falhar, tentar query mais simples
+                    console.warn('⚠️ Tentando query alternativa...');
+                    this.loadImagesAlternative();
+                }
+            }
+
+            // Query alternativa em caso de erro
+            async loadImagesAlternative() {
+                try {
+                    console.log('🔄 Carregando com query alternativa...');
+                    
                     const snapshot = await db.collection('images')
                         .orderBy('createdAt', 'desc')
                         .get();
@@ -1410,7 +1468,7 @@
                         const data = doc.data();
                         const section = data.section || 'gallery';
                         
-                        // Verificar se a imagem está ativa (se não tiver campo active, considerar ativa)
+                        // Filtrar apenas imagens ativas
                         const isActive = data.active !== false;
                         
                         if (isActive && firebaseImages[section]) {
@@ -1423,23 +1481,12 @@
                         }
                     });
 
-                    console.log(`📊 Total de imagens Firebase carregadas: ${totalLoaded}`);
-                    console.log('📋 Imagens por seção:', {
-                        hero: firebaseImages.hero.length,
-                        services: firebaseImages.services.length,
-                        gallery: firebaseImages.gallery.length,
-                        team: firebaseImages.team.length
-                    });
-
-                    // Renderizar APENAS imagens do Firebase
                     this.renderImages(firebaseImages);
                     this.updateImageCount(totalLoaded);
                     
-                    console.log('✅ Dashboard atualizado com imagens Firebase!');
+                    console.log('✅ Imagens carregadas com query alternativa!');
                 } catch (error) {
-                    console.error('❌ Erro ao carregar imagens:', error);
-                    
-                    // Se falhar, mostrar mensagem de erro mais detalhada
+                    console.error('❌ Erro mesmo com query alternativa:', error);
                     this.renderError('Erro ao carregar imagens: ' + error.message);
                 }
             }
@@ -2526,23 +2573,66 @@
             }, 2000);
         }
 
-        // Testar conectividade Firebase
-        async function testFirebaseConnection() {
+        // Função para reorganizar imagens nas seções corretas
+        async function reorganizeImages() {
             try {
-                console.log('🔗 Testando conectividade Firebase...');
+                console.log('� Analisando e reorganizando imagens...');
+                dashboard.showNotification('🔄 Reorganizando imagens...', 'info');
                 
-                const testQuery = await db.collection('images').limit(1).get();
+                const snapshot = await db.collection('images').get();
+                let totalAnalyzed = 0;
+                let totalMoved = 0;
                 
-                if (testQuery.empty) {
-                    console.warn('⚠️ Coleção "images" está vazia');
-                    dashboard.showNotification('⚠️ Nenhuma imagem encontrada no Firebase', 'warning');
-                } else {
-                    console.log('✅ Firebase conectado - ' + testQuery.size + ' imagem(ns) encontrada(s)');
-                    dashboard.showNotification('✅ Firebase conectado com sucesso', 'success');
+                // Mapeamento de palavras-chave para seções
+                const sectionKeywords = {
+                    hero: ['banner', 'principal', 'hero', 'fachada', 'barbearia.jpeg'],
+                    services: ['serviço', 'service', 'cabelo', 'barba', 'infantil', 'pigmentação', 'sobrancelha', 'tesoura', 'luzes', 'platinado'],
+                    gallery: ['taper', 'fade', 'degradê', 'social', 'clássico', 'curly', 'freestyle', 'corte', 'galeria', 'gallery'],
+                    team: ['samuel', 'kaio', 'proprietário', 'equipe', 'team', 'barbeiro']
+                };
+                
+                for (const doc of snapshot.docs) {
+                    const data = doc.data();
+                    const currentSection = data.section || 'gallery';
+                    const title = (data.title || '').toLowerCase();
+                    const url = (data.url || '').toLowerCase();
+                    
+                    totalAnalyzed++;
+                    
+                    // Detectar seção correta baseada no título e URL
+                    let correctSection = 'gallery'; // padrão
+                    
+                    for (const [section, keywords] of Object.entries(sectionKeywords)) {
+                        if (keywords.some(keyword => title.includes(keyword) || url.includes(keyword))) {
+                            correctSection = section;
+                            break;
+                        }
+                    }
+                    
+                    // Se a seção está incorreta, corrigir
+                    if (currentSection !== correctSection) {
+                        console.log(`📋 Movendo "${data.title}" de ${currentSection} para ${correctSection}`);
+                        
+                        await db.collection('images').doc(doc.id).update({
+                            section: correctSection,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        totalMoved++;
+                    }
                 }
+                
+                console.log(`✅ Reorganização concluída: ${totalAnalyzed} analisadas, ${totalMoved} movidas`);
+                dashboard.showNotification(`✅ Reorganização concluída! ${totalMoved} imagens movidas para seções corretas.`, 'success');
+                
+                // Recarregar dashboard após reorganização
+                if (dashboard.imageManager) {
+                    dashboard.imageManager.loadImages();
+                }
+                
             } catch (error) {
-                console.error('❌ Erro na conectividade Firebase:', error);
-                dashboard.showNotification('❌ Erro de conectividade: ' + error.message, 'error');
+                console.error('❌ Erro na reorganização:', error);
+                dashboard.showNotification('❌ Erro na reorganização: ' + error.message, 'error');
             }
         }
 
