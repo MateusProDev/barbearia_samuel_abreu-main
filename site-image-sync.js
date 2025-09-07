@@ -5,7 +5,7 @@
 
 class SiteImageSync {
     constructor() {
-        this.init();
+        this.init(); 
     }
 
     init() {
