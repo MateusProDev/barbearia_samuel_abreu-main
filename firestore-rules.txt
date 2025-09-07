@@ -1,4 +1,4 @@
-// 🔐 Regras de Segurança do Firestore
+// 🔐 Regras de Segurança do Firestore - VERSÃO COMPLETA
 // Copie este código e cole no Firebase Console > Firestore > Regras
 
 rules_version = '2';
@@ -22,6 +22,19 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     
+    // 🖼️ IMAGENS DO SITE - ESSENCIAL PARA FUNCIONAMENTO
+    match /images/{imageId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+    
+    // 📋 SEÇÕES DO SITE - NOVA COLEÇÃO
+    match /sections/{sectionId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
     // 📞 Informações de contato
     match /contact/{document} {
       // Permitir leitura para todos
@@ -30,26 +43,19 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
     
-    // 🖼️ Imagens do site
-    match /images/{imageId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-      allow delete: if request.auth != null;
-    }
-    
-    // ✂️ Serviços (futuro)
+    // ✂️ Serviços
     match /services/{serviceId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // 📸 Galeria (futuro)
+    // 📸 Galeria
     match /gallery/{imageId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
     
-    // 👥 Equipe (futuro)
+    // 👥 Equipe
     match /team/{memberId} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -58,6 +64,18 @@ service cloud.firestore {
     // ⚙️ Configurações gerais
     match /settings/{settingId} {
       allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // � Logs do sistema (opcional)
+    match /logs/{logId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // 🔄 Migrações (para controle de versões)
+    match /migrations/{migrationId} {
+      allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
   }

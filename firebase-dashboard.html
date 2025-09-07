@@ -534,16 +534,50 @@
         .section-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 15px;
-            padding-bottom: 10px;
+            padding-bottom: 15px;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            gap: 15px;
+        }
+
+        .section-info {
+            flex: 1;
         }
 
         .section-title {
             color: var(--primary-color);
             font-size: 1.2rem;
+            margin: 0 0 5px 0;
+        }
+
+        .section-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
             margin: 0;
+        }
+
+        .section-controls {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .section-edit-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 0.85rem;
+        }
+
+        .section-edit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
         }
 
         .add-image-btn {
@@ -560,6 +594,45 @@
         .add-image-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Estilos para Inicialização */
+        .initialization-content {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .init-section {
+            background: rgba(26, 26, 26, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .init-section h3 {
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .init-section p {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0 0 15px 0;
+            font-size: 0.9rem;
+        }
+
+        .migration-progress {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(15, 15, 15, 0.7);
+            border-radius: 6px;
+        }
+
+        .migration-status {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .images-grid {
@@ -820,6 +893,25 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Sistema de Inicialização -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">🚀</div>
+                    <h3 class="card-title">Sistema Completo</h3>
+                </div>
+                <div class="card-content">
+                    <div class="preview-section">
+                        <p><strong>Status:</strong> <span id="system-status">Sistema ativo</span></p>
+                        <p><strong>Última Sincronização:</strong> <span id="last-sync">Carregando...</span></p>
+                    </div>
+                    <div class="status-indicator status-active"></div>
+                    <span>Pronto para uso</span>
+                    <button class="action-btn" onclick="openInitializationModal()">
+                        🚀 Inicializar Sistema
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -926,8 +1018,14 @@
                     <!-- Seção Hero/Banner -->
                     <div class="image-section">
                         <div class="section-header">
-                            <h3 class="section-title">🌟 Banner Principal</h3>
-                            <button class="add-image-btn" onclick="addImageToSection('hero')">+ Adicionar</button>
+                            <div class="section-info">
+                                <h3 class="section-title">🌟 Banner Principal</h3>
+                                <p class="section-description">Imagem de destaque do site</p>
+                            </div>
+                            <div class="section-controls">
+                                <button class="section-edit-btn" onclick="editSection('hero')">✏️ Editar Seção</button>
+                                <button class="add-image-btn" onclick="addImageToSection('hero')">+ Adicionar Imagem</button>
+                            </div>
                         </div>
                         <div class="images-grid" id="hero-images"></div>
                     </div>
@@ -935,8 +1033,14 @@
                     <!-- Seção Serviços -->
                     <div class="image-section">
                         <div class="section-header">
-                            <h3 class="section-title">✂️ Serviços</h3>
-                            <button class="add-image-btn" onclick="addImageToSection('services')">+ Adicionar</button>
+                            <div class="section-info">
+                                <h3 class="section-title">✂️ Serviços</h3>
+                                <p class="section-description">Imagens dos serviços oferecidos</p>
+                            </div>
+                            <div class="section-controls">
+                                <button class="section-edit-btn" onclick="editSection('services')">✏️ Editar Seção</button>
+                                <button class="add-image-btn" onclick="addImageToSection('services')">+ Adicionar Imagem</button>
+                            </div>
                         </div>
                         <div class="images-grid" id="services-images"></div>
                     </div>
@@ -944,8 +1048,14 @@
                     <!-- Seção Galeria -->
                     <div class="image-section">
                         <div class="section-header">
-                            <h3 class="section-title">📸 Galeria</h3>
-                            <button class="add-image-btn" onclick="addImageToSection('gallery')">+ Adicionar</button>
+                            <div class="section-info">
+                                <h3 class="section-title">📸 Galeria</h3>
+                                <p class="section-description">Portfólio de trabalhos realizados</p>
+                            </div>
+                            <div class="section-controls">
+                                <button class="section-edit-btn" onclick="editSection('gallery')">✏️ Editar Seção</button>
+                                <button class="add-image-btn" onclick="addImageToSection('gallery')">+ Adicionar Imagem</button>
+                            </div>
                         </div>
                         <div class="images-grid" id="gallery-images"></div>
                     </div>
@@ -953,8 +1063,14 @@
                     <!-- Seção Equipe -->
                     <div class="image-section">
                         <div class="section-header">
-                            <h3 class="section-title">👨‍💼 Equipe</h3>
-                            <button class="add-image-btn" onclick="addImageToSection('team')">+ Adicionar</button>
+                            <div class="section-info">
+                                <h3 class="section-title">👨‍💼 Equipe</h3>
+                                <p class="section-description">Profissionais da barbearia</p>
+                            </div>
+                            <div class="section-controls">
+                                <button class="section-edit-btn" onclick="editSection('team')">✏️ Editar Seção</button>
+                                <button class="add-image-btn" onclick="addImageToSection('team')">+ Adicionar Imagem</button>
+                            </div>
                         </div>
                         <div class="images-grid" id="team-images"></div>
                     </div>
@@ -997,6 +1113,80 @@
                 <input type="hidden" id="replace-image-id" name="replaceId">
                 <button type="submit" class="btn-save">📤 Fazer Upload</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Seção -->
+    <div id="sectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">✏️ Editar Seção</h2>
+                <span class="close" onclick="closeModal('sectionModal')">&times;</span>
+            </div>
+            <form onsubmit="saveSectionData(event)">
+                <div class="form-group">
+                    <label for="section-title">Título da Seção:</label>
+                    <input type="text" id="section-title" name="title" required placeholder="Ex: Serviços">
+                </div>
+                <div class="form-group">
+                    <label for="section-description">Descrição da Seção:</label>
+                    <textarea id="section-description" name="description" placeholder="Descrição da seção..." rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="section-subtitle">Subtítulo (opcional):</label>
+                    <input type="text" id="section-subtitle" name="subtitle" placeholder="Ex: Nossos principais serviços">
+                </div>
+                <div class="form-group">
+                    <label for="section-visible">
+                        <input type="checkbox" id="section-visible" name="visible" checked>
+                        Seção visível no site
+                    </label>
+                </div>
+                <input type="hidden" id="current-section-id" name="sectionId">
+                <button type="submit" class="btn-save">💾 Salvar Seção</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Inicialização do Sistema -->
+    <div id="initializationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🚀 Inicializar Sistema Completo</h2>
+                <span class="close" onclick="closeModal('initializationModal')">&times;</span>
+            </div>
+            <div class="initialization-content">
+                <div class="init-section">
+                    <h3>📁 Migração de Imagens Estáticas</h3>
+                    <p>Migrar todas as imagens estáticas do site para o Firebase</p>
+                    <button class="action-btn" onclick="migrateAllStaticImages()">
+                        📤 Migrar Imagens Estáticas
+                    </button>
+                    <div class="migration-progress" id="migration-progress" style="display: none;">
+                        <p>Migrando imagens... <span class="loading-spinner"></span></p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="migration-progress-fill"></div>
+                        </div>
+                        <div class="migration-status" id="migration-status"></div>
+                    </div>
+                </div>
+                
+                <div class="init-section">
+                    <h3>🏗️ Estrutura de Dados</h3>
+                    <p>Criar todas as coleções e documentos necessários</p>
+                    <button class="action-btn" onclick="initializeFirebaseStructure()">
+                        🏗️ Criar Estrutura Firebase
+                    </button>
+                </div>
+                
+                <div class="init-section">
+                    <h3>⚙️ Configurações de Seções</h3>
+                    <p>Inicializar configurações padrão das seções</p>
+                    <button class="action-btn" onclick="initializeSectionSettings()">
+                        ⚙️ Configurar Seções
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2118,6 +2308,261 @@
             } catch (error) {
                 console.error('❌ Erro ao migrar imagem:', error);
                 dashboard.showNotification('❌ Erro ao migrar imagem: ' + error.message, 'error');
+            }
+        }
+
+        // Função para editar seções
+        function editSection(sectionId) {
+            console.log('✏️ Editando seção:', sectionId);
+            
+            // Definir seção atual
+            document.getElementById('current-section-id').value = sectionId;
+            
+            // Carregar dados da seção (ou usar padrões)
+            const sectionData = getSectionDefaults(sectionId);
+            
+            document.getElementById('section-title').value = sectionData.title;
+            document.getElementById('section-description').value = sectionData.description;
+            document.getElementById('section-subtitle').value = sectionData.subtitle || '';
+            document.getElementById('section-visible').checked = sectionData.visible !== false;
+            
+            // Abrir modal
+            const modal = document.getElementById('sectionModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Modal de edição de seção aberto');
+            }
+        }
+
+        function getSectionDefaults(sectionId) {
+            const defaults = {
+                hero: {
+                    title: 'Banner Principal',
+                    description: 'Imagem de destaque principal do site',
+                    subtitle: 'Primeira impressão que conta'
+                },
+                services: {
+                    title: 'Nossos Serviços', 
+                    description: 'Serviços especializados em barbearia',
+                    subtitle: 'Qualidade e profissionalismo'
+                },
+                gallery: {
+                    title: 'Galeria de Trabalhos',
+                    description: 'Portfólio dos nossos melhores trabalhos',
+                    subtitle: 'Veja o que sabemos fazer'
+                },
+                team: {
+                    title: 'Nossa Equipe',
+                    description: 'Profissionais qualificados e experientes', 
+                    subtitle: 'Conheça nossos barbeiros'
+                }
+            };
+            
+            return defaults[sectionId] || { title: sectionId, description: '' };
+        }
+
+        async function saveSectionData(event) {
+            event.preventDefault();
+            console.log('💾 Salvando dados da seção...');
+            
+            try {
+                const formData = new FormData(event.target);
+                const sectionId = formData.get('sectionId');
+                const data = {
+                    title: formData.get('title'),
+                    description: formData.get('description'),
+                    subtitle: formData.get('subtitle'),
+                    visible: formData.has('visible'),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Salvar no Firebase
+                await db.collection('sections').doc(sectionId).set(data, { merge: true });
+                
+                console.log('✅ Seção salva com sucesso');
+                dashboard.showNotification('✅ Seção atualizada com sucesso!');
+                
+                // Fechar modal
+                closeModal('sectionModal');
+                
+                // Atualizar interface
+                updateSectionDisplay(sectionId, data);
+                
+            } catch (error) {
+                console.error('❌ Erro ao salvar seção:', error);
+                dashboard.showNotification('❌ Erro ao salvar seção: ' + error.message, 'error');
+            }
+        }
+
+        function updateSectionDisplay(sectionId, data) {
+            // Atualizar título e descrição na interface
+            const titleElement = document.querySelector(`#${sectionId}-images`).closest('.image-section').querySelector('.section-title');
+            const descElement = document.querySelector(`#${sectionId}-images`).closest('.image-section').querySelector('.section-description');
+            
+            if (titleElement) titleElement.textContent = `${getSectionIcon(sectionId)} ${data.title}`;
+            if (descElement) descElement.textContent = data.description;
+        }
+
+        function getSectionIcon(sectionId) {
+            const icons = {
+                hero: '🌟',
+                services: '✂️', 
+                gallery: '📸',
+                team: '👨‍💼'
+            };
+            return icons[sectionId] || '📁';
+        }
+
+        // Funções de Inicialização do Sistema
+        function openInitializationModal() {
+            console.log('🚀 Abrindo modal de inicialização...');
+            
+            const modal = document.getElementById('initializationModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ Modal de inicialização aberto');
+            }
+        }
+
+        async function migrateAllStaticImages() {
+            console.log('📤 Iniciando migração de todas as imagens estáticas...');
+            
+            try {
+                const progressElement = document.getElementById('migration-progress');
+                const progressFill = document.getElementById('migration-progress-fill');
+                const statusElement = document.getElementById('migration-status');
+                
+                progressElement.style.display = 'block';
+                progressFill.style.width = '0%';
+                statusElement.textContent = 'Preparando migração...';
+                
+                // Obter todas as imagens estáticas
+                const existingImages = dashboard.imageManager.getExistingSiteImages();
+                const allImages = [];
+                
+                for (const section in existingImages) {
+                    for (const image of existingImages[section]) {
+                        allImages.push({ ...image, section });
+                    }
+                }
+                
+                console.log(`📊 Total de ${allImages.length} imagens para migrar`);
+                
+                let migratedCount = 0;
+                
+                for (const image of allImages) {
+                    try {
+                        statusElement.textContent = `Migrando: ${image.title}...`;
+                        
+                        // Verificar se já existe no Firebase
+                        const existing = await db.collection('images')
+                            .where('originalId', '==', image.id)
+                            .limit(1)
+                            .get();
+                        
+                        if (existing.empty) {
+                            // Salvar no Firebase
+                            await db.collection('images').add({
+                                url: image.url,
+                                title: image.title,
+                                description: image.description,
+                                section: image.section,
+                                alt: image.title,
+                                migratedFrom: 'site',
+                                originalId: image.id,
+                                active: true,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            console.log(`✅ Migrada: ${image.title}`);
+                        } else {
+                            console.log(`⚠️ Já existe: ${image.title}`);
+                        }
+                        
+                        migratedCount++;
+                        const progress = (migratedCount / allImages.length) * 100;
+                        progressFill.style.width = progress + '%';
+                        
+                    } catch (error) {
+                        console.error(`❌ Erro ao migrar ${image.title}:`, error);
+                    }
+                }
+                
+                statusElement.textContent = `✅ Migração concluída! ${migratedCount} imagens processadas.`;
+                dashboard.showNotification('✅ Migração de imagens concluída com sucesso!');
+                
+                // Recarregar imagens
+                if (dashboard.imageManager) {
+                    dashboard.imageManager.loadImages();
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro na migração:', error);
+                dashboard.showNotification('❌ Erro na migração: ' + error.message, 'error');
+                
+                const statusElement = document.getElementById('migration-status');
+                if (statusElement) {
+                    statusElement.textContent = '❌ Erro na migração';
+                }
+            }
+        }
+
+        async function initializeFirebaseStructure() {
+            console.log('🏗️ Inicializando estrutura Firebase...');
+            
+            try {
+                // Criar estrutura básica de coleções
+                const collections = [
+                    { name: 'sections', doc: 'hero', data: getSectionDefaults('hero') },
+                    { name: 'sections', doc: 'services', data: getSectionDefaults('services') },
+                    { name: 'sections', doc: 'gallery', data: getSectionDefaults('gallery') },
+                    { name: 'sections', doc: 'team', data: getSectionDefaults('team') },
+                    {
+                        name: 'settings',
+                        doc: 'site',
+                        data: {
+                            name: 'Barbearia Samuel Abreu',
+                            theme: 'gold-dark',
+                            maintenance: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }
+                    }
+                ];
+                
+                for (const col of collections) {
+                    await db.collection(col.name).doc(col.doc).set(col.data, { merge: true });
+                }
+                
+                console.log('✅ Estrutura Firebase criada');
+                dashboard.showNotification('✅ Estrutura Firebase inicializada com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao criar estrutura:', error);
+                dashboard.showNotification('❌ Erro ao criar estrutura: ' + error.message, 'error');
+            }
+        }
+
+        async function initializeSectionSettings() {
+            console.log('⚙️ Inicializando configurações de seções...');
+            
+            try {
+                const sections = ['hero', 'services', 'gallery', 'team'];
+                
+                for (const sectionId of sections) {
+                    const sectionData = getSectionDefaults(sectionId);
+                    sectionData.visible = true;
+                    sectionData.order = sections.indexOf(sectionId);
+                    sectionData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    
+                    await db.collection('sections').doc(sectionId).set(sectionData, { merge: true });
+                }
+                
+                console.log('✅ Configurações de seções inicializadas');
+                dashboard.showNotification('✅ Configurações de seções inicializadas!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar seções:', error);
+                dashboard.showNotification('❌ Erro ao inicializar seções: ' + error.message, 'error');
             }
         }
 
