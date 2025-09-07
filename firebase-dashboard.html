@@ -1186,6 +1186,17 @@
                         • Sistema Firebase ativo ✅<br>
                         • Dashboard responsivo ✅
                     </div>
+                    
+                    <!-- Botões de Sincronização -->
+                    <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                        <button class="action-btn" onclick="forceRefreshDashboard(); closeModal('initializationModal');" style="background: linear-gradient(45deg, #2196F3, #1976D2);">
+                            🔄 Atualizar Dashboard
+                        </button>
+                        <button class="action-btn" onclick="window.open('https://barbeariasamuelabreu.com.br/', '_blank')" style="background: linear-gradient(45deg, #4CAF50, #45a049);">
+                            👀 Verificar Site
+                        </button>
+                    </div>
+                    
                     <div class="migration-progress" id="migration-progress" style="display: none;">
                         <p>Migrando imagens... <span class="loading-spinner"></span></p>
                         <div class="progress-bar">
@@ -1321,30 +1332,57 @@
                 try {
                     console.log('🔄 Carregando imagens do Firebase...');
                     
+                    // Limpar qualquer cache antigo
+                    const sections = ['hero', 'services', 'gallery', 'team'];
+                    sections.forEach(section => {
+                        const container = document.getElementById(`${section}-images`);
+                        if (container) {
+                            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">🔄 Carregando imagens...</div>';
+                        }
+                    });
+                    
                     // Carregar APENAS imagens do Firebase
-                    const snapshot = await db.collection('images').where('active', '==', true).get();
-                    const firebaseImages = {};
+                    const snapshot = await db.collection('images')
+                        .where('active', '!=', false)
+                        .orderBy('active')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    
+                    const firebaseImages = {
+                        hero: [],
+                        services: [],
+                        gallery: [],
+                        team: []
+                    };
 
+                    let totalLoaded = 0;
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const section = data.section || 'gallery';
                         
-                        if (!firebaseImages[section]) {
-                            firebaseImages[section] = [];
+                        if (firebaseImages[section]) {
+                            firebaseImages[section].push({
+                                id: doc.id,
+                                source: 'firebase',
+                                ...data
+                            });
+                            totalLoaded++;
                         }
-                        
-                        firebaseImages[section].push({
-                            id: doc.id,
-                            source: 'firebase',
-                            ...data
-                        });
+                    });
+
+                    console.log(`📊 Total de imagens Firebase carregadas: ${totalLoaded}`);
+                    console.log('📋 Imagens por seção:', {
+                        hero: firebaseImages.hero.length,
+                        services: firebaseImages.services.length,
+                        gallery: firebaseImages.gallery.length,
+                        team: firebaseImages.team.length
                     });
 
                     // Renderizar APENAS imagens do Firebase
                     this.renderImages(firebaseImages);
-                    this.updateImageCount(snapshot.size);
+                    this.updateImageCount(totalLoaded);
                     
-                    console.log('✅ Imagens Firebase carregadas:', firebaseImages);
+                    console.log('✅ Dashboard atualizado com imagens Firebase!');
                 } catch (error) {
                     console.error('❌ Erro ao carregar imagens:', error);
                     
@@ -2399,23 +2437,37 @@
             // Mostrar loading
             dashboard.showNotification('🔄 Recarregando dashboard...', 'info');
             
-            // Limpar cache das imagens (se houver)
-            if (dashboard.imageManager) {
-                // Recarregar imagens do Firebase
+            // Limpar todas as seções primeiro
+            const sections = ['hero', 'services', 'gallery', 'team'];
+            sections.forEach(section => {
+                const container = document.getElementById(`${section}-images`);
+                if (container) {
+                    container.innerHTML = '<div style="text-align: center; padding: 20px;">🔄 Carregando...</div>';
+                }
+            });
+            
+            // Forçar recarregamento completo das imagens
+            if (dashboard && dashboard.imageManager) {
+                console.log('🔄 Forçando recarregamento das imagens...');
                 dashboard.imageManager.loadImages();
-                console.log('✅ Imagens recarregadas do Firebase');
+            } else {
+                console.warn('⚠️ ImageManager não encontrado, tentando reinicializar...');
+                // Tentar reinicializar o dashboard
+                if (typeof initializeDashboard === 'function') {
+                    initializeDashboard();
+                }
             }
             
-            // Atualizar estatísticas
-            dashboard.updateStats();
+            // Atualizar estatísticas se existir
+            if (dashboard && dashboard.updateStats) {
+                dashboard.updateStats();
+            }
             
-            // Recarregar seções
-            dashboard.loadSections();
-            
-            // Notificação de sucesso
+            // Forçar um reload da página se necessário
             setTimeout(() => {
-                dashboard.showNotification('✅ Dashboard atualizado com sucesso!', 'success');
-            }, 1000);
+                console.log('✅ Refresh completo executado');
+                dashboard.showNotification('✅ Dashboard atualizado! Mostrando apenas imagens do Firebase.', 'success');
+            }, 2000);
         }
 
         async function logout() {
