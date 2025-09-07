@@ -88,11 +88,30 @@
             border: none;
             cursor: pointer;
             font-size: 0.9rem;
+            margin-left: 10px;
         }
 
         .nav-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 16px rgba(212, 175, 55, 0.3);
+        }
+
+        .nav-btn.refresh-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            animation: none;
+        }
+
+        .nav-btn.refresh-btn:hover {
+            box-shadow: 0 8px 16px rgba(33, 150, 243, 0.3);
+        }
+
+        .nav-btn.refresh-btn:active {
+            animation: spin 0.5s ease-in-out;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .nav-btn.logout {
@@ -812,6 +831,7 @@
                     <div class="user-name" id="userName">Carregando...</div>
                     <div class="user-role" id="userRole">Administrador</div>
                 </div>
+                <button onclick="forceRefreshDashboard()" class="nav-btn refresh-btn" title="Recarregar Dashboard">🔄 Refresh</button>
                 <a href="index.html" class="nav-btn">Ver Site</a>
                 <button onclick="logout()" class="nav-btn logout">Sair</button>
             </div>
@@ -2370,6 +2390,32 @@
         // �🔄 Funções utilitárias
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Função para refresh forçado do dashboard
+        function forceRefreshDashboard() {
+            console.log('🔄 Executando refresh forçado do dashboard...');
+            
+            // Mostrar loading
+            dashboard.showNotification('🔄 Recarregando dashboard...', 'info');
+            
+            // Limpar cache das imagens (se houver)
+            if (dashboard.imageManager) {
+                // Recarregar imagens do Firebase
+                dashboard.imageManager.loadImages();
+                console.log('✅ Imagens recarregadas do Firebase');
+            }
+            
+            // Atualizar estatísticas
+            dashboard.updateStats();
+            
+            // Recarregar seções
+            dashboard.loadSections();
+            
+            // Notificação de sucesso
+            setTimeout(() => {
+                dashboard.showNotification('✅ Dashboard atualizado com sucesso!', 'success');
+            }, 1000);
         }
 
         async function logout() {
