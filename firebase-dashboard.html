@@ -578,6 +578,38 @@
             background: var(--card-bg);
         }
 
+        .image-item.existing-image {
+            border: 2px solid #4CAF50;
+        }
+
+        .image-item.firebase-image {
+            border: 2px solid var(--primary-color);
+        }
+
+        .image-header {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 2;
+        }
+
+        .image-badge {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .image-badge.existing {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .image-badge.firebase {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+        }
+
         .image-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
@@ -587,7 +619,6 @@
             width: 100%;
             height: 120px;
             object-fit: cover;
-            border-radius: 8px 8px 0 0;
         }
 
         .image-info {
@@ -600,6 +631,15 @@
             font-weight: 600;
             color: var(--primary-color);
             margin-bottom: 5px;
+        }
+
+        .image-description {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+            max-height: 40px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .image-actions {
@@ -954,6 +994,7 @@
                     </div>
                 </div>
                 <input type="hidden" id="current-section" name="section">
+                <input type="hidden" id="replace-image-id" name="replaceId">
                 <button type="submit" class="btn-save">📤 Fazer Upload</button>
             </form>
         </div>
@@ -1064,28 +1105,222 @@
             // Carregar imagens do Firebase
             async loadImages() {
                 try {
+                    console.log('🔄 Carregando imagens do Firebase...');
+                    
+                    // Primeiro, carregar imagens do Firebase
                     const snapshot = await db.collection('images').where('active', '==', true).get();
-                    const imagesBySection = {};
+                    const firebaseImages = {};
 
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const section = data.section || 'gallery';
                         
-                        if (!imagesBySection[section]) {
-                            imagesBySection[section] = [];
+                        if (!firebaseImages[section]) {
+                            firebaseImages[section] = [];
                         }
                         
-                        imagesBySection[section].push({
+                        firebaseImages[section].push({
                             id: doc.id,
+                            source: 'firebase',
                             ...data
                         });
                     });
 
-                    this.renderImages(imagesBySection);
+                    // Segundo, incluir imagens existentes do site (do JSON inicial)
+                    const existingImages = this.getExistingSiteImages();
+                    
+                    // Combinar imagens Firebase + existentes
+                    const allImages = this.combineImages(firebaseImages, existingImages);
+
+                    this.renderImages(allImages);
                     this.updateImageCount(snapshot.size);
+                    
+                    console.log('✅ Imagens carregadas:', allImages);
                 } catch (error) {
                     console.error('❌ Erro ao carregar imagens:', error);
+                    
+                    // Se falhar Firebase, pelo menos mostrar imagens existentes
+                    const existingImages = this.getExistingSiteImages();
+                    this.renderImages(existingImages);
                 }
+            }
+
+            // Obter imagens existentes do site
+            getExistingSiteImages() {
+                const existingImages = {
+                    hero: [
+                        {
+                            id: 'hero_main',
+                            title: 'Banner Principal',
+                            url: 'img/proprietario.jpeg',
+                            source: 'site',
+                            description: 'Imagem principal do banner'
+                        }
+                    ],
+                    services: [
+                        {
+                            id: 'service_cabelo_barba',
+                            title: 'Cabelo e Barba',
+                            url: 'img/cabelo e barba.jpeg',
+                            source: 'site',
+                            description: 'Serviço de corte e barba'
+                        },
+                        {
+                            id: 'service_infantil',
+                            title: 'Corte Infantil',
+                            url: 'img/Corte infantil.jpeg',
+                            source: 'site',
+                            description: 'Corte especializado para crianças'
+                        },
+                        {
+                            id: 'service_pigmentacao',
+                            title: 'Pigmentação',
+                            url: 'img/pigmentacao.jpeg',
+                            source: 'site',
+                            description: 'Pigmentação para cobertura de fios brancos'
+                        },
+                        {
+                            id: 'service_sobrancelha',
+                            title: 'Sobrancelha',
+                            url: 'img/sombracelha.jpeg',
+                            source: 'site',
+                            description: 'Design de sobrancelha masculina'
+                        },
+                        {
+                            id: 'service_tesoura',
+                            title: 'Corte na Tesoura',
+                            url: 'img/classico na tesoura.jpeg',
+                            source: 'site',
+                            description: 'Técnica clássica com tesoura'
+                        },
+                        {
+                            id: 'service_luzes',
+                            title: 'Luzes',
+                            url: 'img/luzes.jpeg',
+                            source: 'site',
+                            description: 'Mechas e luzes para visual moderno'
+                        },
+                        {
+                            id: 'service_platinado',
+                            title: 'Platinado',
+                            url: 'img/platinado.jpeg',
+                            source: 'site',
+                            description: 'Coloração platinada'
+                        }
+                    ],
+                    gallery: [
+                        {
+                            id: 'gallery_taper_fade',
+                            title: 'Taper Fade Americano',
+                            url: 'img/Corte taper fade Americano.jpeg',
+                            source: 'site',
+                            description: 'Estilo americano moderno'
+                        },
+                        {
+                            id: 'gallery_mid_fade',
+                            title: 'Mid Fade',
+                            url: 'img/Mid fade.jpeg',
+                            source: 'site',
+                            description: 'Degradê no meio da cabeça'
+                        },
+                        {
+                            id: 'gallery_high_fade',
+                            title: 'High Fade',
+                            url: 'img/High fadeDegradê alto.jpeg',
+                            source: 'site',
+                            description: 'Degradê alto com acabamentos versáteis'
+                        },
+                        {
+                            id: 'gallery_low_fade',
+                            title: 'Low Fade',
+                            url: 'img/Low fadeDegradê baixo.jpeg',
+                            source: 'site',
+                            description: 'Degradê baixo discreto'
+                        },
+                        {
+                            id: 'gallery_social',
+                            title: 'Social Clássico',
+                            url: 'img/Social Clássico..jpeg',
+                            source: 'site',
+                            description: 'Elegância atemporal'
+                        },
+                        {
+                            id: 'gallery_corte_social',
+                            title: 'Corte Social',
+                            url: 'img/corte_social.jpeg',
+                            source: 'site',
+                            description: 'Modelo tradicional'
+                        },
+                        {
+                            id: 'gallery_curly',
+                            title: 'Curly Hair',
+                            url: 'img/Curly hair..jpeg',
+                            source: 'site',
+                            description: 'Especializado em cabelos cacheados'
+                        },
+                        {
+                            id: 'gallery_freestyle',
+                            title: 'Freestyle',
+                            url: 'img/freestyle.jpeg',
+                            source: 'site',
+                            description: 'Corte criativo e personalizado'
+                        }
+                    ],
+                    team: [
+                        {
+                            id: 'team_samuel_1',
+                            title: 'Samuel Abreu - Principal',
+                            url: 'img/proprietario.jpeg',
+                            source: 'site',
+                            description: 'Proprietário e Barbeiro Master'
+                        },
+                        {
+                            id: 'team_samuel_2',
+                            title: 'Samuel Abreu - Foto 2',
+                            url: 'img/proprietario 2.jpeg',
+                            source: 'site',
+                            description: 'Segunda foto do proprietário'
+                        },
+                        {
+                            id: 'team_samuel_3',
+                            title: 'Samuel (Samu)',
+                            url: 'img/samu.jpeg',
+                            source: 'site',
+                            description: 'Foto adicional do Samuel'
+                        },
+                        {
+                            id: 'team_kaio_1',
+                            title: 'Kaio - Principal',
+                            url: 'img/kaioUm.jpeg',
+                            source: 'site',
+                            description: 'Barbeiro Profissional'
+                        },
+                        {
+                            id: 'team_kaio_2',
+                            title: 'Kaio - Foto 2',
+                            url: 'img/kaioDois.jpeg',
+                            source: 'site',
+                            description: 'Segunda foto do Kaio'
+                        }
+                    ]
+                };
+
+                return existingImages;
+            }
+
+            // Combinar imagens do Firebase com existentes
+            combineImages(firebaseImages, existingImages) {
+                const combined = {};
+                const sections = ['hero', 'services', 'gallery', 'team'];
+
+                sections.forEach(section => {
+                    combined[section] = [
+                        ...(existingImages[section] || []),
+                        ...(firebaseImages[section] || [])
+                    ];
+                });
+
+                return combined;
             }
 
             // Renderizar imagens na interface
@@ -1103,18 +1338,37 @@
                         return;
                     }
                     
-                    container.innerHTML = images.map(image => `
-                        <div class="image-item">
-                            <img src="${image.url}" alt="${image.title || 'Imagem'}" class="image-preview">
-                            <div class="image-info">
-                                <div class="image-title">${image.title || 'Sem título'}</div>
-                                <div class="image-actions">
-                                    <button class="image-action-btn" onclick="editImage('${image.id}')">✏️</button>
-                                    <button class="image-action-btn" onclick="deleteImage('${image.id}')">🗑️</button>
+                    container.innerHTML = images.map(image => {
+                        const isExisting = image.source === 'site';
+                        const isFirebase = image.source === 'firebase';
+                        
+                        const statusBadge = isExisting ? 
+                            '<span class="image-badge existing">🏠 Site</span>' : 
+                            '<span class="image-badge firebase">☁️ Firebase</span>';
+                            
+                        const actionButtons = isExisting ? 
+                            `<button class="image-action-btn" onclick="replaceImage('${image.id}', '${section}')">🔄 Substituir</button>
+                             <button class="image-action-btn" onclick="migrateToFirebase('${image.id}')">📤 Migrar</button>` :
+                            `<button class="image-action-btn" onclick="editImage('${image.id}')">✏️ Editar</button>
+                             <button class="image-action-btn" onclick="deleteImage('${image.id}')">🗑️ Excluir</button>`;
+                        
+                        return `
+                            <div class="image-item ${isExisting ? 'existing-image' : 'firebase-image'}">
+                                <div class="image-header">
+                                    ${statusBadge}
+                                </div>
+                                <img src="${image.url}" alt="${image.title || 'Imagem'}" class="image-preview" 
+                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5FcnJvPC90ZXh0Pjwvc3ZnPg=='">
+                                <div class="image-info">
+                                    <div class="image-title">${image.title || 'Sem título'}</div>
+                                    <div class="image-description">${image.description || 'Sem descrição'}</div>
+                                    <div class="image-actions">
+                                        ${actionButtons}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 });
             }
 
@@ -1797,6 +2051,74 @@
             // Por enquanto, apenas log - funcionalidade de edição pode ser implementada depois
             console.log('✏️ Editando imagem:', imageId);
             dashboard.showNotification('ℹ️ Funcionalidade de edição em desenvolvimento');
+        }
+
+        function replaceImage(imageId, section) {
+            console.log('🔄 Substituindo imagem:', imageId, 'na seção:', section);
+            
+            // Definir dados para substituição
+            document.getElementById('current-section').value = section;
+            document.getElementById('replace-image-id').value = imageId;
+            
+            // Abrir modal de upload
+            const uploadModal = document.getElementById('uploadModal');
+            if (uploadModal) {
+                uploadModal.style.display = 'block';
+                
+                // Mudar título do modal
+                const modalTitle = uploadModal.querySelector('.modal-title');
+                if (modalTitle) {
+                    modalTitle.textContent = '🔄 Substituir Imagem';
+                }
+                
+                console.log('✅ Modal de substituição aberto');
+            }
+        }
+
+        async function migrateToFirebase(imageId) {
+            if (!confirm('📤 Migrar esta imagem para o sistema Firebase? Isso permitirá editá-la e gerenciá-la melhor.')) {
+                return;
+            }
+            
+            try {
+                console.log('📤 Migrando imagem para Firebase:', imageId);
+                
+                // Encontrar a imagem nos dados existentes
+                const existingImages = dashboard.imageManager.getExistingSiteImages();
+                let imageToMigrate = null;
+                
+                for (const section in existingImages) {
+                    const found = existingImages[section].find(img => img.id === imageId);
+                    if (found) {
+                        imageToMigrate = found;
+                        break;
+                    }
+                }
+                
+                if (!imageToMigrate) {
+                    throw new Error('Imagem não encontrada');
+                }
+                
+                // Salvar no Firebase
+                await dashboard.imageManager.saveImageToFirebase({
+                    url: imageToMigrate.url,
+                    title: imageToMigrate.title,
+                    description: imageToMigrate.description,
+                    section: imageToMigrate.section || 'gallery',
+                    alt: imageToMigrate.title,
+                    migratedFrom: 'site',
+                    originalId: imageId
+                });
+                
+                dashboard.showNotification('✅ Imagem migrada para o Firebase com sucesso!');
+                
+                // Recarregar imagens
+                dashboard.imageManager.loadImages();
+                
+            } catch (error) {
+                console.error('❌ Erro ao migrar imagem:', error);
+                dashboard.showNotification('❌ Erro ao migrar imagem: ' + error.message, 'error');
+            }
         }
 
         // �🔄 Funções utilitárias
