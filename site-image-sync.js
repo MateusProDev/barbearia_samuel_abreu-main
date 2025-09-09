@@ -299,14 +299,38 @@ class SiteImageSync {
         const imageUrl = heroImage.cloudinaryUrl || heroImage.url;
         
         if (imageUrl) {
-            // Aplicar apenas como background, preservando o conteúdo
-            heroSection.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('${imageUrl}')`;
+            // Aplicar imagem de fundo com gradientes de profundidade sobrepostos
+            heroSection.style.backgroundImage = `
+                linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), 
+                url('${imageUrl}')
+            `;
             heroSection.style.backgroundSize = 'cover';
             heroSection.style.backgroundPosition = 'center';
             heroSection.style.backgroundRepeat = 'no-repeat';
             
-            console.log('✅ Background do hero atualizado');
+            // Adicionar elementos de profundidade se não existirem
+            this.addDepthElements(heroSection);
+            
+            console.log('✅ Background do hero atualizado com gradiente de profundidade');
         }
+    }
+
+    // Adicionar elementos de profundidade ao hero
+    addDepthElements(heroSection) {
+        // Verificar se já existem os elementos
+        if (!heroSection.querySelector('.wave-effect')) {
+            const waveEffect = document.createElement('div');
+            waveEffect.className = 'wave-effect';
+            heroSection.appendChild(waveEffect);
+        }
+        
+        if (!heroSection.querySelector('.inner-shadow')) {
+            const innerShadow = document.createElement('div');
+            innerShadow.className = 'inner-shadow';
+            heroSection.appendChild(innerShadow);
+        }
+        
+        console.log('🌊 Elementos de profundidade adicionados ao hero');
     }
 
     updateServicesSection(servicesImages) {

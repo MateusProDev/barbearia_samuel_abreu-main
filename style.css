@@ -133,7 +133,7 @@ header {
   transform: rotate(-45deg) translate(7px, -6px);
 }
 
-/* Hero Section Otimizada */
+/* Hero Section Otimizada com Gradiente de Profundidade */
 .hero {
   min-height: 100vh;
   display: flex;
@@ -145,11 +145,79 @@ header {
   background-attachment: fixed;
   text-align: center;
   padding: clamp(80px, 15vw, 120px) var(--container-padding) clamp(40px, 8vw, 80px);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Gradiente de sombra na parte inferior para profundidade */
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(
+    to top,
+    rgba(15, 15, 15, 0.9) 0%,
+    rgba(15, 15, 15, 0.7) 30%,
+    rgba(15, 15, 15, 0.4) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Gradiente adicional para mais profundidade */
+.hero::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Efeito de onda sutil na transição */
+.hero .wave-effect {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: 
+    radial-gradient(ellipse at center bottom, rgba(15, 15, 15, 0.8) 0%, transparent 70%);
+  z-index: 3;
+}
+
+/* Adicionar sombra interna para mais profundidade */
+.hero .inner-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-shadow: 
+    inset 0 -50px 100px rgba(0, 0, 0, 0.3),
+    inset 0 -150px 200px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Garantir que o conteúdo fique acima dos gradientes */
 .hero-content {
   max-width: 900px;
   animation: fadeInUp 1s ease-out;
+  position: relative;
+  z-index: 2;
 }
 
 .hero h1 {
