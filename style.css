@@ -166,6 +166,18 @@ header {
   );
   pointer-events: none;
   z-index: 1;
+  animation: deepShadow 4s ease-in-out infinite alternate;
+}
+
+@keyframes deepShadow {
+  0% {
+    opacity: 0.8;
+    height: 120px;
+  }
+  100% {
+    opacity: 1;
+    height: 140px;
+  }
 }
 
 /* Gradiente adicional para mais profundidade */
@@ -196,6 +208,36 @@ header {
   background: 
     radial-gradient(ellipse at center bottom, rgba(15, 15, 15, 0.8) 0%, transparent 70%);
   z-index: 3;
+}
+
+/* Brilho dourado sutil na parte inferior */
+.hero .wave-effect::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.3) 25%,
+    rgba(212, 175, 55, 0.6) 50%,
+    rgba(212, 175, 55, 0.3) 75%,
+    transparent 100%
+  );
+  animation: goldGlow 3s ease-in-out infinite;
+}
+
+@keyframes goldGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scaleX(1.2);
+  }
 }
 
 /* Adicionar sombra interna para mais profundidade */
@@ -383,14 +425,22 @@ header {
   font-size: clamp(0.9rem, 1.8vw, 1rem);
 }
 
-/* Grid de Cortes Responsivo Aprimorado */
+/* Grid de Cortes Responsivo Aprimorado com Tamanhos Uniformes */
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: clamp(25px, 5vw, 40px);
   margin-top: clamp(50px, 7vw, 80px);
   padding: clamp(20px, 4vw, 40px);
   position: relative;
+  /* Garantir alinhamento uniforme */
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+/* Garantir que todos os cards tenham a mesma altura em cada linha */
+.gallery-grid {
+  grid-auto-rows: 320px;
 }
 
 .gallery-grid::before {
@@ -421,6 +471,39 @@ header {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
   background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  /* Garantir tamanho uniforme para todos os cards */
+  aspect-ratio: 4/3;
+  height: 320px;
+  min-height: 320px;
+  max-height: 320px;
+}
+
+/* Responsividade para tamanhos uniformes */
+@media (max-width: 768px) {
+  .gallery-item {
+    height: 280px;
+    min-height: 280px;
+    max-height: 280px;
+  }
+  
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-auto-rows: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-item {
+    height: 250px;
+    min-height: 250px;
+    max-height: 250px;
+  }
+  
+  .gallery-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: 250px;
+    gap: 20px;
+  }
 }
 
 .gallery-item::before {
@@ -455,10 +538,15 @@ header {
 
 .gallery-item img {
   width: 100%;
-  height: clamp(200px, 30vw, 280px);
+  height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   filter: brightness(0.9) contrast(1.1);
+  /* Garantir que a imagem preencha completamente o card */
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .gallery-item:hover img {
