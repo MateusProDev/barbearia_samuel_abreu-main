@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Debug Firebase Site</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        .section {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .image-item {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        .image-info {
+            padding: 10px;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 Debug Firebase → Site</h1>
+        
+        <div class="debug-container">
+            <button onclick="testFirebaseConnection()">🔥 Testar Conexão</button>
+            <button onclick="loadAndShowImages()">📥 Carregar Imagens</button>
+            <button onclick="testSiteSync()">🔄 Testar Sync Site</button>
+            <button onclick="clearLog()">🧹 Limpar Log</button>
+        </div>
+        
+        <div id="status"></div>
+        <div id="log" class="log"></div>
+        
+        <div id="images-display"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Configuração Firebase (mesma do site)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '';
+            document.getElementById('images-display').innerHTML = '';
+        }
+
+        async function testFirebaseConnection() {
+            log('🔥 TESTANDO CONEXÃO FIREBASE...');
+            
+            try {
+                const testQuery = await db.collection('images').limit(1).get();
+                log(`✅ Conexão OK - ${testQuery.size} documentos de teste`);
+                showStatus('Conexão Firebase funcionando!', 'success');
+                return true;
+            } catch (error) {
+                log(`❌ Erro na conexão: ${error.message}`);
+                showStatus('Erro na conexão Firebase', 'error');
+                return false;
+            }
+        }
+
+        async function loadAndShowImages() {
+            log('📥 CARREGANDO TODAS AS IMAGENS DO FIREBASE...');
+            
+            try {
+                // Tentar query idêntica ao site primeiro
+                let snapshot;
+                try {
+                    log('🔍 Tentando query com índice...');
+                    snapshot = await db.collection('images')
+                        .where('active', '!=', false)
+                        .orderBy('active')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    log('✅ Query com índice funcionou!');
+                } catch (indexError) {
+                    log('⚠️ Query com índice falhou, usando alternativa...');
+                    snapshot = await db.collection('images')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                }
+
+                const imagesBySection = {
+                    hero: [],
+                    services: [],
+                    gallery: [],
+                    team: []
+                };
+
+                let totalImages = 0;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const isActive = data.active !== false;
+                    
+                    log(`📄 Documento: ${doc.id}`);
+                    log(`   Título: ${data.title}`);
+                    log(`   Seção: ${data.section}`);
+                    log(`   Ativo: ${data.active}`);
+                    log(`   URL: ${data.url?.substring(0, 50)}...`);
+                    
+                    if (isActive) {
+                        const section = data.section || 'gallery';
+                        if (imagesBySection[section]) {
+                            imagesBySection[section].push({
+                                id: doc.id,
+                                ...data
+                            });
+                            totalImages++;
+                        }
+                    }
+                });
+
+                log(`📊 RESUMO:`);
+                log(`   Total Ativas: ${totalImages}`);
+                log(`   Hero: ${imagesBySection.hero.length}`);
+                log(`   Serviços: ${imagesBySection.services.length}`);
+                log(`   Galeria: ${imagesBySection.gallery.length}`);
+                log(`   Equipe: ${imagesBySection.team.length}`);
+
+                displayImages(imagesBySection);
+                showStatus(`${totalImages} imagens carregadas com sucesso!`, 'success');
+
+            } catch (error) {
+                log(`❌ ERRO AO CARREGAR: ${error.message}`);
+                showStatus('Erro ao carregar imagens', 'error');
+            }
+        }
+
+        function displayImages(imagesBySection) {
+            const container = document.getElementById('images-display');
+            container.innerHTML = '';
+
+            Object.keys(imagesBySection).forEach(sectionName => {
+                const images = imagesBySection[sectionName];
+                if (images.length === 0) return;
+
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'section';
+                sectionDiv.innerHTML = `
+                    <h3>${sectionName.toUpperCase()} (${images.length} imagens)</h3>
+                    <div class="image-grid" id="${sectionName}-grid"></div>
+                `;
+                container.appendChild(sectionDiv);
+
+                const grid = sectionDiv.querySelector('.image-grid');
+                images.forEach(image => {
+                    const imageDiv = document.createElement('div');
+                    imageDiv.className = 'image-item';
+                    imageDiv.innerHTML = `
+                        <img src="${image.url}" alt="${image.title}" loading="lazy">
+                        <div class="image-info">
+                            <strong>${image.title}</strong><br>
+                            <small>ID: ${image.id}</small><br>
+                            <small>Seção: ${image.section}</small>
+                        </div>
+                    `;
+                    grid.appendChild(imageDiv);
+                });
+            });
+        }
+
+        async function testSiteSync() {
+            log('🔄 TESTANDO SINCRONIZAÇÃO COM SITE...');
+            
+            try {
+                // Simular o que o site-image-sync.js faz
+                log('📡 Simulando carregamento do site...');
+                
+                const snapshot = await db.collection('images')
+                    .where('active', '!=', false)
+                    .orderBy('active')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                log('🎯 Testando aplicação nas seções do site...');
+                
+                // Verificar elementos do site que o sync deveria encontrar
+                const siteElements = {
+                    heroSection: '.hero',
+                    heroLogo: '.hero-logo',
+                    serviceCards: '.service-card img',
+                    galleryGrid: '.gallery-grid',
+                    teamCarousel: '.team-carousel'
+                };
+
+                Object.keys(siteElements).forEach(elementName => {
+                    const selector = siteElements[elementName];
+                    const elements = document.querySelectorAll(selector);
+                    log(`🔍 ${elementName} (${selector}): ${elements.length} encontrados`);
+                });
+
+                showStatus('Teste de sincronização completo - veja o log', 'success');
+
+            } catch (error) {
+                log(`❌ ERRO NO TESTE: ${error.message}`);
+                showStatus('Erro no teste de sincronização', 'error');
+            }
+        }
+
+        // Log inicial
+        log('🎯 Debug Firebase Site carregado');
+        log('🔥 Firebase configurado com projeto: barbeariasamuelabreu');
+    </script>
+</body>
+</html>

@@ -244,6 +244,24 @@
             margin-bottom: 20px;
         }
 
+        .modal-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .modal-controls button {
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .modal-controls button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
         .modal-title {
             color: var(--primary-color);
             font-size: 1.5rem;
@@ -1031,6 +1049,14 @@
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h2 class="modal-title">🖼️ Gerenciar Imagens do Site</h2>
+                <div class="modal-controls">
+                    <button onclick="forceSyncDashboardSite()" style="background: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">
+                        🔄 Sincronizar Agora
+                    </button>
+                    <button onclick="debugImageSync()" style="background: #ffc107; color: black; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">
+                        🔍 Debug Sync
+                    </button>
+                </div>
                 <span class="close" onclick="closeModal('imageModal')">&times;</span>
             </div>
             <div class="image-manager-container">
@@ -1367,25 +1393,29 @@
             // Salvar imagem no Firebase
             async saveImageToFirebase(imageData) {
                 try {
-                    await db.collection('images').add({
+                    const docRef = await db.collection('images').add({
                         ...imageData,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         active: true
                     });
                     
-                    console.log('✅ Imagem salva no Firebase');
-                    return true;
+                    console.log('✅ Imagem salva no Firebase com ID:', docRef.id);
+                    
+                    // Notificar site sobre nova imagem
+                    this.notifyExternalSync();
+                    
+                    return docRef.id;
                 } catch (error) {
                     console.error('❌ Erro ao salvar imagem no Firebase:', error);
                     throw error;
                 }
             }
 
-            // Carregar imagens com query otimizada
+            // Carregar imagens com query IDÊNTICA ao site
             async loadImages() {
                 try {
-                    console.log('🔄 Carregando imagens do Firebase...');
+                    console.log('🔄 Carregando imagens do Firebase (query IDÊNTICA ao site)...');
                     
                     // Limpar qualquer cache antigo
                     const sections = ['hero', 'services', 'gallery', 'team'];
@@ -1396,11 +1426,24 @@
                         }
                     });
                     
-                    // Query simples sem índice complexo
-                    console.log('📡 Buscando todas as imagens...');
-                    const snapshot = await db.collection('images')
-                        .orderBy('createdAt', 'desc')
-                        .get();
+                    let snapshot;
+                    
+                    try {
+                        // QUERY IDÊNTICA AO SITE - Tentar primeiro
+                        console.log('📡 Usando query idêntica ao site...');
+                        snapshot = await db.collection('images')
+                            .where('active', '!=', false)
+                            .orderBy('active')
+                            .orderBy('createdAt', 'desc')
+                            .get();
+                        console.log('✅ Query idêntica ao site funcionou!');
+                    } catch (indexError) {
+                        console.warn('⚠️ Índice não disponível, usando query alternativa...');
+                        // Fallback para query simples
+                        snapshot = await db.collection('images')
+                            .orderBy('createdAt', 'desc')
+                            .get();
+                    }
                     
                     const firebaseImages = {
                         hero: [],
@@ -1413,7 +1456,7 @@
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         
-                        // Filtrar apenas imagens ativas
+                        // Filtrar apenas imagens ativas (mesmo critério do site)
                         const isActive = data.active !== false;
                         
                         if (isActive) {
@@ -1431,18 +1474,18 @@
                     });
 
                     console.log(`📊 Total de imagens ativas carregadas: ${totalLoaded}`);
-                    console.log('📋 Imagens por seção:', {
+                    console.log('📋 Imagens por seção (idênticas ao site):', {
                         hero: firebaseImages.hero.length,
                         services: firebaseImages.services.length,
                         gallery: firebaseImages.gallery.length,
                         team: firebaseImages.team.length
                     });
 
-                    // Renderizar as imagens
+                    // Renderizar EXATAMENTE as mesmas imagens que aparecem no site
                     this.renderImages(firebaseImages);
                     this.updateImageCount(totalLoaded);
                     
-                    console.log('✅ Imagens carregadas com sucesso!');
+                    console.log('✅ Dashboard sincronizado com as MESMAS imagens do site!');
                 } catch (error) {
                     console.error('❌ Erro ao carregar imagens:', error);
                     this.renderError('Erro ao carregar imagens: ' + error.message);
@@ -1681,6 +1724,62 @@
                 
                 // Carregar dados do dashboard
                 this.loadInitialData();
+                
+                // Configurar verificação automática de sincronização (a cada 30 segundos)
+                this.setupAutoSyncCheck();
+            }
+
+            setupAutoSyncCheck() {
+                console.log('⏰ Configurando verificação automática de sincronização...');
+                
+                setInterval(async () => {
+                    try {
+                        // Verificar se há diferenças significativas
+                        const firebaseCount = await this.getFirebaseImageCount();
+                        const dashboardCount = this.getDashboardImageCount();
+                        
+                        if (Math.abs(firebaseCount - dashboardCount) > 0) {
+                            console.log(`⚠️ Dessincronização detectada: Firebase=${firebaseCount}, Dashboard=${dashboardCount}`);
+                            console.log('🔄 Realizando sincronização automática...');
+                            
+                            if (this.imageManager) {
+                                await this.imageManager.loadImages();
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ Erro na verificação automática:', error.message);
+                    }
+                }, 30000); // 30 segundos
+            }
+
+            async getFirebaseImageCount() {
+                try {
+                    const snapshot = await db.collection('images')
+                        .where('active', '!=', false)
+                        .get();
+                    return snapshot.size;
+                } catch (error) {
+                    // Fallback para query simples
+                    const snapshot = await db.collection('images').get();
+                    let count = 0;
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.active !== false) count++;
+                    });
+                    return count;
+                }
+            }
+
+            getDashboardImageCount() {
+                const sections = ['hero', 'services', 'gallery', 'team'];
+                let total = 0;
+                sections.forEach(section => {
+                    const container = document.getElementById(`${section}-images`);
+                    if (container) {
+                        total += container.querySelectorAll('.image-item').length;
+                    }
+                });
+                return total;
             }
 
             async verifyUserAndLoad(user) {
@@ -2247,17 +2346,8 @@
                 
                 console.log('✅ Imagem salva com sucesso no Firebase');
                 
-                if (dashboard && dashboard.showNotification) {
-                    dashboard.showNotification('✅ Imagem adicionada com sucesso!');
-                } else {
-                    alert('✅ Imagem adicionada com sucesso!');
-                }
-                
-                // Fechar modals e recarregar
+                // Fechar modal imediatamente
                 closeModal('uploadModal');
-                if (imageManager.loadImages) {
-                    imageManager.loadImages();
-                }
                 
                 // Reset form
                 event.target.reset();
@@ -2267,6 +2357,24 @@
                 if (progressFill) {
                     progressFill.style.width = '0%';
                 }
+                
+                // Mostrar notificação de sucesso
+                if (dashboard && dashboard.showNotification) {
+                    dashboard.showNotification('✅ Imagem adicionada com sucesso! Atualizando dashboard...');
+                } else {
+                    alert('✅ Imagem adicionada com sucesso!');
+                }
+                
+                // Recarregar dashboard após pequeno delay para garantir que Firebase processou
+                setTimeout(() => {
+                    console.log('🔄 Recarregando dashboard após upload...');
+                    if (imageManager && imageManager.loadImages) {
+                        imageManager.loadImages();
+                    }
+                    if (dashboard && dashboard.imageManager && dashboard.imageManager.loadImages) {
+                        dashboard.imageManager.loadImages();
+                    }
+                }, 1500);
                 
             } catch (error) {
                 console.error('💥 ERRO COMPLETO NO UPLOAD:', error);
@@ -2703,6 +2811,122 @@
                     console.error('❌ Erro ao fazer logout:', error);
                     dashboard.showNotification('❌ Erro ao sair do sistema', 'error');
                 }
+            }
+        }
+
+        // 🔄 FUNÇÕES DE SINCRONIZAÇÃO FORÇADA
+        async function forceSyncDashboardSite() {
+            console.log('🔄 FORÇANDO SINCRONIZAÇÃO DASHBOARD ↔ SITE...');
+            
+            try {
+                // Mostrar feedback visual
+                if (dashboard && dashboard.showNotification) {
+                    dashboard.showNotification('🔄 Sincronizando dashboard e site...', 'info');
+                }
+                
+                // 1. Recarregar imagens no dashboard
+                console.log('📊 Passo 1: Recarregando imagens no dashboard...');
+                if (dashboard && dashboard.imageManager) {
+                    await dashboard.imageManager.loadImages();
+                }
+                
+                // 2. Notificar site para recarregar
+                console.log('📡 Passo 2: Notificando site para recarregar...');
+                localStorage.setItem('firebase_images_updated', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('firebaseImagesUpdated', {
+                    detail: { 
+                        timestamp: Date.now(),
+                        source: 'dashboard_force_sync'
+                    }
+                }));
+                
+                // 3. Aguardar processamento
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                console.log('✅ Sincronização forçada concluída!');
+                if (dashboard && dashboard.showNotification) {
+                    dashboard.showNotification('✅ Dashboard e site sincronizados!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro na sincronização forçada:', error);
+                if (dashboard && dashboard.showNotification) {
+                    dashboard.showNotification('❌ Erro na sincronização: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 🔍 FUNÇÃO DE DEBUG DE SINCRONIZAÇÃO
+        async function debugImageSync() {
+            console.log('🔍 INICIANDO DEBUG DE SINCRONIZAÇÃO...');
+            
+            try {
+                // Contar imagens no Firebase
+                const snapshot = await db.collection('images')
+                    .where('active', '!=', false)
+                    .get();
+                
+                const imagesBySection = {
+                    hero: [],
+                    services: [],
+                    gallery: [],
+                    team: []
+                };
+                
+                let totalFirebase = 0;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const section = data.section || 'gallery';
+                    if (imagesBySection[section]) {
+                        imagesBySection[section].push({
+                            id: doc.id,
+                            title: data.title,
+                            section: data.section,
+                            active: data.active
+                        });
+                        totalFirebase++;
+                    }
+                });
+                
+                // Contar imagens no dashboard
+                const dashboardSections = ['hero', 'services', 'gallery', 'team'];
+                const dashboardCounts = {};
+                let totalDashboard = 0;
+                
+                dashboardSections.forEach(section => {
+                    const container = document.getElementById(`${section}-images`);
+                    const images = container ? container.querySelectorAll('.image-item').length : 0;
+                    dashboardCounts[section] = images;
+                    totalDashboard += images;
+                });
+                
+                // Mostrar relatório
+                const reportMessage = `
+📊 RELATÓRIO DE SINCRONIZAÇÃO:
+
+🔥 Firebase:
+• Total: ${totalFirebase} imagens
+• Hero: ${imagesBySection.hero.length}
+• Serviços: ${imagesBySection.services.length}  
+• Galeria: ${imagesBySection.gallery.length}
+• Equipe: ${imagesBySection.team.length}
+
+📱 Dashboard:
+• Total: ${totalDashboard} imagens
+• Hero: ${dashboardCounts.hero || 0}
+• Serviços: ${dashboardCounts.services || 0}
+• Galeria: ${dashboardCounts.gallery || 0}
+• Equipe: ${dashboardCounts.team || 0}
+
+${totalFirebase === totalDashboard ? '✅ SINCRONIZADO' : '⚠️ DESSINCRONIZADO'}
+                `;
+                
+                console.log(reportMessage);
+                alert(reportMessage);
+                
+            } catch (error) {
+                console.error('❌ Erro no debug:', error);
+                alert('❌ Erro no debug: ' + error.message);
             }
         }
 
