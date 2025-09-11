@@ -343,51 +343,177 @@ class SiteImageSync {
     }
 
     updateServicesSection(servicesImages) {
-        if (!servicesImages || servicesImages.length === 0) {
-            console.log('✂️ Nenhuma imagem de serviços encontrada');
-            return;
-        }
-
-        console.log(`✂️ Atualizando serviços com ${servicesImages.length} imagens`);
-        const serviceCards = document.querySelectorAll('.service-card img');
+        console.log(`✂️ Iniciando atualização da seção de serviços...`);
         
-        if (serviceCards.length === 0) {
-            console.warn('⚠️ Cards de serviço não encontrados');
+        const servicesGrid = document.querySelector('.services-grid');
+        
+        if (!servicesGrid) {
+            console.warn('⚠️ Grid de serviços não encontrado');
             return;
         }
 
-        // Mapear imagens para cards específicos baseado no título
-        const serviceMapping = {
-            'cabelo e barba': 0,
-            'corte infantil': 1,
-            'pigmentação': 2,
-            'sobrancelha': 3,
-            'tesoura': 4,
-            'luzes': 5,
-            'platinado': 6
-        };
+        console.log('✅ Grid de serviços encontrado');
 
-        servicesImages.forEach(image => {
-            const title = (image.title || '').toLowerCase();
-            const cardIndex = this.findServiceCardIndex(title, serviceMapping);
-            
-            if (cardIndex !== -1 && serviceCards[cardIndex]) {
-                const imageUrl = image.cloudinaryUrl || image.url;
-                if (imageUrl) {
-                    serviceCards[cardIndex].src = imageUrl;
-                    console.log(`✅ Serviço ${cardIndex} atualizado: ${image.title}`);
-                }
+        // Se não há imagens específicas de serviços, usar imagens padrão ou manter as existentes
+        let imagesToShow = servicesImages;
+        
+        if (!servicesImages || servicesImages.length === 0) {
+            console.warn('⚠️ Nenhuma imagem específica de serviços - usando imagens padrão');
+            imagesToShow = this.getDefaultServiceImages();
+        }
+
+        if (!imagesToShow || imagesToShow.length === 0) {
+            console.log('⚠️ Nenhuma imagem disponível, mantendo serviços existentes');
+            return;
+        }
+
+        console.log(`🔄 Atualizando serviços com ${imagesToShow.length} imagens`);
+
+        // Limpar grid atual
+        servicesGrid.innerHTML = '';
+
+        // Adicionar indicador de carregamento elegante
+        const loadingElement = document.createElement('div');
+        loadingElement.className = 'services-loading';
+        loadingElement.innerHTML = `
+            <div class="loading-spinner"></div>
+            <p>Carregando serviços...</p>
+        `;
+        servicesGrid.appendChild(loadingElement);
+
+        // Remover loading após um tempo
+        setTimeout(() => {
+            if (loadingElement.parentNode) {
+                loadingElement.remove();
             }
+        }, 1000);
+
+        // Adicionar novos cards de serviço
+        imagesToShow.forEach((image, index) => {
+            const imageUrl = image.cloudinaryUrl || image.url;
+            if (!imageUrl) {
+                console.warn(`⚠️ Imagem ${index} sem URL válida:`, image);
+                return;
+            }
+
+            console.log(`➕ Adicionando serviço ${index + 1}: "${image.title}"`);
+            
+            const serviceCard = document.createElement('div');
+            serviceCard.className = 'service-card fade-in';
+            serviceCard.style.opacity = '0'; // Começar invisível para animação
+            serviceCard.innerHTML = `
+                <img src="${imageUrl}" alt="${image.title || 'Serviço'}" loading="lazy"
+                     onerror="console.error('❌ ERRO ao carregar imagem:', '${image.title}', this.src); this.style.display='none';"
+                     onload="this.parentElement.style.opacity='1'; console.log('✅ Imagem de serviço carregada:', '${image.title}')">
+                <h3>${(image.title || 'SERVIÇO PROFISSIONAL').toUpperCase()}</h3>
+                <p>${image.description || 'Serviço especializado com profissionais qualificados e técnicas modernas'}</p>
+                <div class="service-action">
+                    <a href="https://wa.link/19u2v4" target="_blank" class="btn-service">
+                        📱 Agendar
+                    </a>
+                </div>
+            `;
+            
+            servicesGrid.appendChild(serviceCard);
+            
+            // Animação de entrada com delay progressivo
+            setTimeout(() => {
+                serviceCard.style.opacity = '1';
+                serviceCard.style.transform = 'translateY(0)';
+            }, index * 100);
         });
+
+        console.log(`✅ SEÇÃO DE SERVIÇOS TOTALMENTE ATUALIZADA: ${imagesToShow.length} serviços adicionados`);
+        
+        // Forçar exibição da seção
+        setTimeout(() => {
+            this.ensureServicesVisible();
+        }, 100);
+        
+        // Disparar evento para reinicializar animações
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
+                detail: { section: 'services', count: imagesToShow.length } 
+            }));
+        }, 200);
     }
 
-    findServiceCardIndex(title, mapping) {
-        for (const [key, index] of Object.entries(mapping)) {
-            if (title.includes(key)) {
-                return index;
+    // Obter imagens padrão de serviços se não houver imagens específicas
+    getDefaultServiceImages() {
+        // Usar algumas imagens de outras seções como fallback
+        if (!this.currentImages || this.currentImages.length === 0) {
+            return [];
+        }
+
+        // Tentar encontrar imagens que possam ser de serviços pelos títulos
+        const possibleServiceImages = this.currentImages.filter(img => {
+            const title = (img.title || '').toLowerCase();
+            return title.includes('cabelo') || 
+                   title.includes('barba') || 
+                   title.includes('corte') || 
+                   title.includes('infantil') || 
+                   title.includes('pigment') ||
+                   title.includes('sobrancelha') ||
+                   title.includes('tesoura') ||
+                   title.includes('luzes') ||
+                   title.includes('platinado') ||
+                   title.includes('servico') ||
+                   title.includes('fade') ||
+                   title.includes('degradê');
+        });
+
+        if (possibleServiceImages.length > 0) {
+            console.log(`📋 Usando ${possibleServiceImages.length} imagens como serviços por título`);
+            return possibleServiceImages.slice(0, 8); // Máximo 8 serviços
+        }
+
+        // Fallback: usar as primeiras imagens disponíveis (máximo 7)
+        const fallbackImages = this.currentImages.slice(0, 7);
+        console.log(`📋 Usando ${fallbackImages.length} imagens como fallback para serviços`);
+        return fallbackImages;
+    }
+
+    // Método para garantir que a seção de serviços seja visível
+    ensureServicesVisible() {
+        console.log('🎯 Garantindo visibilidade da seção de serviços...');
+        
+        const servicesGrid = document.querySelector('.services-grid');
+        if (!servicesGrid) {
+            console.error('❌ .services-grid não encontrado');
+            return;
+        }
+
+        // Forçar exibição do grid principal
+        servicesGrid.style.display = 'grid';
+        servicesGrid.style.opacity = '1';
+        servicesGrid.style.visibility = 'visible';
+        
+        // Verificar e corrigir cards de serviço
+        const cards = servicesGrid.children;
+        console.log(`📊 Verificando ${cards.length} cards de serviço...`);
+        
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            
+            // Garantir que o card seja visível
+            card.style.display = 'block';
+            card.style.opacity = '1';
+            card.style.visibility = 'visible';
+            
+            const img = card.querySelector('img');
+            if (img) {
+                // Garantir que a imagem seja visível
+                img.style.display = 'block';
+                img.style.width = '100%';
+                img.style.height = 'auto';
+                
+                console.log(`✅ Card ${i + 1} configurado: ${img.alt}`);
+            } else {
+                console.warn(`⚠️ Card ${i + 1} sem imagem`);
             }
         }
-        return -1;
+        
+        console.log('✅ Visibilidade da seção de serviços garantida');
     }
 
     updateGallerySection(galleryImages) {
@@ -484,6 +610,13 @@ class SiteImageSync {
         setTimeout(() => {
             this.ensureGalleryVisible();
         }, 100);
+        
+        // Disparar evento para reinicializar animações
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
+                detail: { section: 'gallery', count: imagesToShow.length } 
+            }));
+        }, 200);
     }
 
     // Método para garantir que a galeria seja visível
@@ -687,6 +820,13 @@ class SiteImageSync {
         this.reinitializeCarousel(teamContainer);
 
         console.log(`🎉 Carrossel da equipe atualizado com ${imagesToUse.length} slides`);
+        
+        // Disparar evento para reinicializar animações
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
+                detail: { section: 'team', count: imagesToUse.length } 
+            }));
+        }, 300);
     }
 
     // Obter imagens padrão da equipe se não houver imagens específicas
@@ -1094,7 +1234,47 @@ function setupAutoDebug() {
         if (siteSync) {
             console.log('🔄 Forçando atualização manual da galeria...');
             siteSync.forceUpdate();
-            setTimeout(() => siteSync.ensureGalleryVisible(), 1000);
+            setTimeout(() => {
+                siteSync.ensureGalleryVisible();
+                siteSync.ensureServicesVisible();
+            }, 1000);
+        }
+    };
+
+    // Função específica para debug de serviços
+    window.forceServicesUpdate = () => {
+        if (siteSync) {
+            console.log('🔄 Forçando atualização manual dos serviços...');
+            const imagesByCategory = siteSync.organizeImagesByCategory();
+            siteSync.updateServicesSection(imagesByCategory.services);
+            setTimeout(() => siteSync.ensureServicesVisible(), 500);
+        }
+    };
+
+    // Função de debug completa
+    window.debugSite = () => {
+        if (siteSync) {
+            console.log('🔍 DEBUG COMPLETO DO SITE:');
+            siteSync.debugImages();
+            
+            // Verificar elementos do DOM
+            const galleryGrid = document.querySelector('.gallery-grid');
+            const servicesGrid = document.querySelector('.services-grid');
+            const carouselTrack = document.querySelector('.carousel-track');
+            
+            console.log('🎯 Elementos encontrados:');
+            console.log('  - Galeria:', galleryGrid ? 'SIM' : 'NÃO');
+            console.log('  - Serviços:', servicesGrid ? 'SIM' : 'NÃO');
+            console.log('  - Carrossel:', carouselTrack ? 'SIM' : 'NÃO');
+            
+            if (servicesGrid) {
+                console.log(`  - Cards de serviço: ${servicesGrid.children.length}`);
+            }
+            
+            return {
+                images: siteSync.currentImages,
+                elements: { galleryGrid, servicesGrid, carouselTrack }
+            };
         }
     };
     
