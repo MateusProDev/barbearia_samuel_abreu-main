@@ -15,6 +15,7 @@ class BarberShop {
         this.setupFormHandler();
         this.setupWelcomeAnimation();
         this.setupCarousel();
+        this.setupCarouselUpdateListener();
     }
 
     // Menu Mobile
@@ -339,6 +340,27 @@ class BarberShop {
         
         // Mostrar primeiro slide
         goToSlide(0);
+        
+        // Disponibilizar função globalmente para reinicialização
+        window.setupCarousel = () => {
+            console.log('🔄 Reinicializando carrossel via função global...');
+            this.setupCarousel();
+        };
+    }
+
+    // Escutar atualizações do carrossel vindas do sistema de sincronização
+    setupCarouselUpdateListener() {
+        window.addEventListener('carouselUpdated', (event) => {
+            console.log('📡 Evento carouselUpdated recebido:', event.detail);
+            
+            // Aguardar um pouco para os elementos estarem prontos
+            setTimeout(() => {
+                console.log('🔄 Reconfigurando carrossel após atualização...');
+                this.setupCarousel();
+            }, 500);
+        });
+        
+        console.log('👂 Listener de atualização do carrossel configurado');
     }
 
     // Sistema de Notificações

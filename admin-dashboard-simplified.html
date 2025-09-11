@@ -684,22 +684,40 @@
                         <div class="images-grid" id="services-images"></div>
                     </div>
 
-                    <!-- Seção Galeria -->
+                    <!-- Seção Galeria de Cortes -->
                     <div class="image-section">
                         <div class="section-header">
-                            <h3 class="section-title">📸 Galeria</h3>
+                            <h3 class="section-title">📸 Galeria de Cortes</h3>
                             <button class="add-image-btn" onclick="addImageToSection('gallery')">+ Adicionar</button>
                         </div>
                         <div class="images-grid" id="gallery-images"></div>
                     </div>
 
-                    <!-- Seção Equipe -->
+                    <!-- Seção Equipe/Carrossel -->
                     <div class="image-section">
                         <div class="section-header">
-                            <h3 class="section-title">👨‍💼 Equipe</h3>
+                            <h3 class="section-title">👨‍💼 Equipe e Ambiente</h3>
                             <button class="add-image-btn" onclick="addImageToSection('team')">+ Adicionar</button>
                         </div>
                         <div class="images-grid" id="team-images"></div>
+                    </div>
+
+                    <!-- Seção Portfólio/Trabalhos -->
+                    <div class="image-section">
+                        <div class="section-header">
+                            <h3 class="section-title">🎨 Portfólio de Trabalhos</h3>
+                            <button class="add-image-btn" onclick="addImageToSection('portfolio')">+ Adicionar</button>
+                        </div>
+                        <div class="images-grid" id="portfolio-images"></div>
+                    </div>
+
+                    <!-- Seção Instalações -->
+                    <div class="image-section">
+                        <div class="section-header">
+                            <h3 class="section-title">🏪 Instalações</h3>
+                            <button class="add-image-btn" onclick="addImageToSection('instalacoes')">+ Adicionar</button>
+                        </div>
+                        <div class="images-grid" id="instalacoes-images"></div>
                     </div>
                 </div>
             </div>
@@ -787,6 +805,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+    <script src="firebase-auto-setup.js"></script>
     <script src="image-manager.js"></script>
     <script src="image-migration.js"></script>
     <script src="firebase-initializer.js"></script>
@@ -887,7 +906,7 @@
 
             // Renderizar imagens na interface
             renderImages(imagesBySection) {
-                const sections = ['hero', 'services', 'gallery', 'team'];
+                const sections = ['hero', 'services', 'gallery', 'team', 'portfolio', 'instalacoes'];
                 
                 sections.forEach(section => {
                     const container = document.getElementById(`${section}-images`);
@@ -897,15 +916,26 @@
                     
                     container.innerHTML = images.map(image => `
                         <div class="image-item">
-                            <img src="${image.url}" alt="${image.title}" class="image-preview">
+                            <img src="${image.url || image.cloudinaryUrl}" alt="${image.title}" class="image-preview">
                             <div class="image-actions">
-                                <button class="btn-small btn-edit" onclick="editImage('${image.id}')">✏️</button>
+                                <button class="btn-small btn-edit" onclick="editImage('${image.id}', '${section}')">✏️</button>
                                 <button class="btn-small btn-delete" onclick="deleteImage('${image.id}')">🗑️</button>
+                                <button class="btn-small" onclick="toggleImageStatus('${image.id}')" 
+                                        style="background: ${image.active !== false ? '#4CAF50' : '#ff9800'};">
+                                    ${image.active !== false ? '👁️' : '🚫'}
+                                </button>
                             </div>
                             <p style="font-size: 0.8rem; margin: 5px 0 0 0; opacity: 0.8;">${image.title}</p>
+                            <p style="font-size: 0.7rem; margin: 2px 0; opacity: 0.6;">${image.section || 'Sem seção'}</p>
                         </div>
                     `).join('');
                 });
+
+                // Atualizar contador total de imagens
+                const totalImages = Object.values(imagesBySection).reduce((total, sectionImages) => 
+                    total + sectionImages.length, 0
+                );
+                this.updateImageCount(totalImages);
             }
 
             // Salvar imagem no Firebase
@@ -1265,8 +1295,41 @@
             
             const formData = new FormData(event.target);
             const file = document.getElementById('image-file').files[0];
+            const editingId = document.getElementById('current-section').dataset.editingId;
             
-            if (!file) {
+            // Se está editando e não escolheu nova imagem, apenas atualiza os dados
+            if (editingId && !file) {
+                try {
+                    await db.collection('images').doc(editingId).update({
+                        title: formData.get('title'),
+                        description: formData.get('description'),
+                        section: formData.get('section'),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedBy: localStorage.getItem('adminEmail') || 'admin'
+                    });
+
+                    dashboard.showSuccess('Imagem atualizada com sucesso!');
+                    
+                    // Limpar modo de edição
+                    delete document.getElementById('current-section').dataset.editingId;
+                    document.querySelector('#uploadModal .modal-title').textContent = '📤 Upload de Imagem';
+                    document.getElementById('image-file').required = true;
+                    
+                    closeModal('uploadModal');
+                    await dashboard.imageManager.loadImages();
+                    triggerSiteSync();
+                    
+                    event.target.reset();
+                    return;
+                    
+                } catch (error) {
+                    console.error('Erro ao editar:', error);
+                    dashboard.showError('Erro ao editar imagem: ' + error.message);
+                    return;
+                }
+            }
+            
+            if (!file && !editingId) {
                 alert('❌ Selecione uma imagem');
                 return;
             }
@@ -1275,27 +1338,50 @@
                 // Mostrar progresso
                 document.getElementById('upload-progress').style.display = 'block';
                 
-                // Upload para Cloudinary
-                const imageUrl = await dashboard.imageManager.uploadImageToCloudinary(file);
+                let imageUrl;
                 
-                // Salvar no Firebase
-                await dashboard.imageManager.saveImage({
+                if (file) {
+                    // Upload para Cloudinary
+                    imageUrl = await dashboard.imageManager.uploadImageToCloudinary(file);
+                }
+                
+                const imageData = {
                     title: formData.get('title'),
                     description: formData.get('description'),
                     section: formData.get('section'),
-                    url: imageUrl
-                });
-
-                dashboard.showSuccess('Imagem enviada com sucesso!');
+                    active: true,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: localStorage.getItem('adminEmail') || 'admin'
+                };
+                
+                if (imageUrl) {
+                    imageData.url = imageUrl;
+                    imageData.cloudinaryUrl = imageUrl;
+                }
+                
+                if (editingId) {
+                    // Atualizar imagem existente
+                    await db.collection('images').doc(editingId).update(imageData);
+                    dashboard.showSuccess('Imagem atualizada com sucesso!');
+                    
+                    // Limpar modo de edição
+                    delete document.getElementById('current-section').dataset.editingId;
+                    document.querySelector('#uploadModal .modal-title').textContent = '📤 Upload de Imagem';
+                    document.getElementById('image-file').required = true;
+                } else {
+                    // Criar nova imagem
+                    imageData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await dashboard.imageManager.saveImage(imageData);
+                    dashboard.showSuccess('Imagem enviada com sucesso!');
+                }
                 
                 // Atualizar preview no dashboard
                 await dashboard.imageManager.loadImages();
                 
-                // Disparar sincronização no site (se estiver aberto)
-                this.triggerSiteSync();
+                // Disparar sincronização no site
+                triggerSiteSync();
                 
                 closeModal('uploadModal');
-                closeModal('imageModal');
                 
                 // Limpar form
                 event.target.reset();
@@ -1329,9 +1415,55 @@
             }
         }
 
-        function editImage(imageId) {
-            // Implementar edição de imagem se necessário
-            alert('Funcionalidade de edição em desenvolvimento');
+        function editImage(imageId, section) {
+            // Implementar edição de imagem
+            db.collection('images').doc(imageId).get().then((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    // Preencher modal de edição
+                    document.getElementById('image-title').value = data.title || '';
+                    document.getElementById('image-description').value = data.description || '';
+                    document.getElementById('current-section').value = data.section || section;
+                    
+                    // Salvar ID para edição
+                    document.getElementById('current-section').dataset.editingId = imageId;
+                    
+                    // Mostrar modal
+                    document.getElementById('uploadModal').style.display = 'block';
+                    
+                    // Alterar título do modal
+                    document.querySelector('#uploadModal .modal-title').textContent = '✏️ Editar Imagem';
+                    
+                    // Tornar o campo de arquivo opcional
+                    document.getElementById('image-file').required = false;
+                }
+            });
+        }
+
+        async function toggleImageStatus(imageId) {
+            try {
+                const doc = await db.collection('images').doc(imageId).get();
+                if (doc.exists) {
+                    const currentStatus = doc.data().active !== false; // default true
+                    
+                    await db.collection('images').doc(imageId).update({
+                        active: !currentStatus,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    dashboard.showSuccess(`Imagem ${!currentStatus ? 'ativada' : 'desativada'} com sucesso!`);
+                    
+                    // Recarregar imagens
+                    await dashboard.imageManager.loadImages();
+                    
+                    // Sincronizar com o site
+                    triggerSiteSync();
+                }
+            } catch (error) {
+                console.error('Erro ao alterar status:', error);
+                dashboard.showError('Erro ao alterar status da imagem');
+            }
         }
 
         // Disparar sincronização no site
