@@ -340,9 +340,18 @@
 
                         this.showSuccess('✅ Login realizado com sucesso! Redirecionando...');
                         
+                        // Configurar sessão de login
+                        sessionStorage.setItem('isLoggedIn', 'true');
+                        localStorage.setItem('adminSession', JSON.stringify({
+                            username: adminData.name || user.email.split('@')[0],
+                            email: user.email,
+                            loginTime: new Date().toISOString(),
+                            uid: user.uid
+                        }));
+                        
                         // Redirecionar para dashboard
                         setTimeout(() => {
-                            window.location.href = 'firebase-dashboard.html';
+                            window.location.href = 'dashboard-modern.html';
                         }, 1500);
 
                     } else {
