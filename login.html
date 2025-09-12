@@ -212,7 +212,13 @@
             </button>
         </form>
         
-        <a href="index.html" class="back-link">← Voltar ao site</a>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="admin-register.html" style="color: #27ae60; text-decoration: none; font-weight: 600;">
+                📝 Cadastrar novo admin
+            </a>
+            <br><br>
+            <a href="index.html" class="back-link">← Voltar ao site</a>
+        </div>
     </div>
 
     <!-- Firebase Scripts - Versão Compat para compatibilidade -->
@@ -305,8 +311,29 @@
                     console.log('✅ Login Firebase realizado:', user.email);
                     console.log('UID:', user.uid);
                     
-                    // Verificar se é admin
-                    await this.verifyAdminAccess(user);
+                    // ✅ ACESSO SIMPLIFICADO - Se logou no Firebase Auth = Admin
+                    console.log('✅ Acesso autorizado automaticamente para:', user.email);
+                    this.showSuccess('✅ Login realizado com sucesso! Redirecionando...');
+                    
+                    // Configurar sessão de login
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('adminEmail', user.email);
+                    sessionStorage.setItem('adminUID', user.uid);
+                    
+                    // Salvar dados no localStorage para persistência
+                    const adminSession = {
+                        email: user.email,
+                        uid: user.uid,
+                        loginTime: new Date().toISOString(),
+                        isAdmin: true
+                    };
+                    
+                    localStorage.setItem('adminSession', JSON.stringify(adminSession));
+                    
+                    // Redirecionar para dashboard após delay
+                    setTimeout(() => {
+                        window.location.href = 'dashboard-modern.html';
+                    }, 1500);
 
                 } catch (error) {
                     console.error('❌ Erro no login:', error);
@@ -316,79 +343,28 @@
                 }
             }
 
-            async verifyAdminAccess(user) {
-                try {
-                    console.log('🔍 Verificando permissões no Firestore...');
-                    console.log('Buscando usuário com email:', user.email);
-                    
-                    // Buscar dados do usuário no Firestore
-                    const usersSnapshot = await db.collection('users')
-                        .where('email', '==', user.email)
-                        .where('isAdmin', '==', true)
-                        .get();
-
-                    console.log('📄 Resultado da busca:', usersSnapshot.size, 'documentos encontrados');
-
-                    if (!usersSnapshot.empty) {
-                        const adminData = usersSnapshot.docs[0].data();
-                        console.log('✅ Admin verificado:', adminData);
-                        
-                        // Atualizar último login
-                        await usersSnapshot.docs[0].ref.update({
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-
-                        this.showSuccess('✅ Login realizado com sucesso! Redirecionando...');
-                        
-                        // Configurar sessão de login
-                        sessionStorage.setItem('isLoggedIn', 'true');
-                        localStorage.setItem('adminSession', JSON.stringify({
-                            username: adminData.name || user.email.split('@')[0],
-                            email: user.email,
-                            loginTime: new Date().toISOString(),
-                            uid: user.uid
-                        }));
-                        
-                        // Redirecionar para dashboard
-                        setTimeout(() => {
-                            window.location.href = 'dashboard-modern.html';
-                        }, 1500);
-
-                    } else {
-                        console.warn('❌ Nenhum admin encontrado para:', user.email);
-                        this.showError('❌ Acesso negado. Este email não tem permissões de administrador.');
-                        
-                        // Mostrar informações de debug
-                        console.log('🔍 Debug - Verificando coleção users...');
-                        const allUsers = await db.collection('users').get();
-                        console.log('👥 Total de usuários na coleção:', allUsers.size);
-                        allUsers.forEach(doc => {
-                            console.log('👤 Usuário encontrado:', doc.data());
-                        });
-                        
-                        await auth.signOut();
-                    }
-
-                } catch (error) {
-                    console.error('❌ Erro ao verificar permissões:', error);
-                    this.showError('❌ Erro ao verificar permissões: ' + error.message);
-                    await auth.signOut();
-                }
-            }
-
             handleLoginError(error) {
                 console.error('Código do erro:', error.code);
                 console.error('Mensagem:', error.message);
                 
                 switch (error.code) {
                     case 'auth/user-not-found':
-                        this.showError('❌ Email não encontrado. Verifique se o usuário foi criado no Firebase Authentication.');
+                        this.showError(`❌ Email não encontrado. 
+                                      <br><strong>📝 Solução:</strong> 
+                                      <br>1. <a href="admin-register.html" style="color: #3498db;">Clique aqui para cadastrar</a>
+                                      <br>2. Ou verifique se digitou o email corretamente`);
+                        break;
+                    case 'auth/invalid-credential':
+                        this.showError(`❌ Email ou senha incorretos. 
+                                      <br><strong>🔧 Soluções:</strong> 
+                                      <br>1. <a href="admin-register.html" style="color: #3498db;">Cadastrar novo usuário</a>
+                                      <br>2. Verificar se a senha está correta`);
                         break;
                     case 'auth/wrong-password':
                         this.showError('❌ Senha incorreta. Tente novamente.');
                         break;
                     case 'auth/invalid-email':
-                        this.showError('❌ Email inválido. Use: admin@barbeariasamuelabreu.com');
+                        this.showError('❌ Email inválido. Use um email válido como samueldomingos63@gmail.com');
                         break;
                     case 'auth/too-many-requests':
                         this.showError('❌ Muitas tentativas. Aguarde alguns minutos.');

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Inicializador Automático - Firebase Setup</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .progress {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #212529;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .domain-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Inicializador Firebase</h1>
+            <p>Configuração automática para <strong>barbeariasamuelabreu.com.br</strong></p>
+        </div>
+
+        <div class="domain-info">
+            <h3>🌐 Configuração de Domínio</h3>
+            <p><strong>Produção:</strong> https://barbeariasamuelabreu.com.br</p>
+            <p><strong>Firebase:</strong> barbeariasamuelabreu.firebaseapp.com</p>
+            <p><strong>Status:</strong> <span id="domainStatus">Verificando...</span></p>
+        </div>
+
+        <div class="progress">
+            <h3>📋 Progresso da Inicialização</h3>
+            <div id="progressContainer"></div>
+            <div class="grid" id="statsGrid"></div>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="button" onclick="initializeFirebase()" id="initBtn">
+                🔥 Inicializar Firebase
+            </button>
+            <button class="button" onclick="checkCollections()" id="checkBtn">
+                🔍 Verificar Coleções
+            </button>
+            <button class="button" onclick="createMissingFields()" id="createBtn" disabled>
+                ➕ Criar Campos Faltantes
+            </button>
+            <button class="button" onclick="testUpload()" id="testBtn" disabled>
+                📤 Testar Upload
+            </button>
+        </div>
+
+        <div class="log" id="logContainer"></div>
+    </div>
+
+    <script>
+        // Configuração Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        let db, storage, auth;
+        let missingCollections = [];
+        let existingData = {};
+
+        // Estrutura completa esperada no Firestore
+        const requiredStructure = {
+            // Coleções principais
+            collections: {
+                'images': {
+                    description: 'Galeria de imagens do site',
+                    requiredFields: ['title', 'category', 'url', 'storagePath', 'createdAt'],
+                    sampleData: {
+                        title: 'Amostra',
+                        category: 'hero',
+                        url: 'https://via.placeholder.com/400',
+                        storagePath: 'samples/placeholder.jpg',
+                        createdAt: firebase.firestore?.Timestamp?.now?.() || new Date()
+                    }
+                },
+                'siteContent': {
+                    description: 'Conteúdo principal do site',
+                    requiredFields: ['title', 'description', 'content', 'updatedAt'],
+                    documents: {
+                        'main': {
+                            title: 'Barbearia Samuel Abreu',
+                            description: 'A melhor barbearia da cidade',
+                            mission: 'Proporcionar o melhor atendimento e cuidado masculino',
+                            metaDescription: 'Barbearia Samuel Abreu - Cortes masculinos, barba, cabelo e tratamentos em barbeariasamuelabreu.com.br',
+                            updatedAt: new Date()
+                        },
+                        'schedule': {
+                            monday: 'Segunda: 08:00 - 18:00',
+                            tuesday: 'Terça: 08:00 - 18:00', 
+                            wednesday: 'Quarta: 08:00 - 18:00',
+                            thursday: 'Quinta: 08:00 - 18:00',
+                            friday: 'Sexta: 08:00 - 18:00',
+                            saturday: 'Sábado: 08:00 - 16:00',
+                            sunday: 'Domingo: Fechado',
+                            updatedAt: new Date()
+                        },
+                        'contact': {
+                            phone: '(XX) XXXXX-XXXX',
+                            whatsapp: '(XX) XXXXX-XXXX',
+                            email: 'contato@barbeariasamuelabreu.com.br',
+                            address: 'Endereço da Barbearia',
+                            instagram: '@barbeariasamuelabreu',
+                            updatedAt: new Date()
+                        }
+                    }
+                },
+                'users': {
+                    description: 'Usuários administrativos',
+                    requiredFields: ['email', 'role', 'name', 'createdAt'],
+                    sampleData: {
+                        email: 'admin@barbeariasamuelabreu.com.br',
+                        role: 'admin',
+                        name: 'Administrador',
+                        createdAt: new Date()
+                    }
+                }
+            },
+            
+            // Categorias de imagem
+            imageCategories: ['hero', 'servicos', 'cortes', 'sobre'],
+            
+            // Configurações do site
+            siteSettings: {
+                domain: 'barbeariasamuelabreu.com.br',
+                title: 'Barbearia Samuel Abreu',
+                theme: 'dark',
+                language: 'pt-br'
+            }
+        };
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': '📋'
+            }[type] || '📋';
+            
+            logContainer.innerHTML += `[${timestamp}] ${icon} ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateProgress(message, type = 'info') {
+            const container = document.getElementById('progressContainer');
+            const statusClass = {
+                'success': 'success',
+                'error': 'error', 
+                'warning': 'warning',
+                'info': 'info'
+            }[type] || 'info';
+            
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${statusClass}`;
+            statusDiv.textContent = message;
+            container.appendChild(statusDiv);
+        }
+
+        function updateStats(stats) {
+            const grid = document.getElementById('statsGrid');
+            grid.innerHTML = '';
+            
+            Object.entries(stats).forEach(([key, value]) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h4>${key}</h4><p>${value}</p>`;
+                grid.appendChild(card);
+            });
+        }
+
+        async function initializeFirebase() {
+            const initBtn = document.getElementById('initBtn');
+            initBtn.disabled = true;
+            initBtn.textContent = '🔄 Inicializando...';
+            
+            try {
+                log('🔥 Inicializando Firebase...', 'info');
+                
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                
+                db = firebase.firestore();
+                storage = firebase.storage();
+                auth = firebase.auth();
+                
+                // Testar conexão
+                await db.collection('test').doc('connection').set({
+                    timestamp: firebase.firestore.Timestamp.now(),
+                    message: 'Conexão OK'
+                });
+                
+                await db.collection('test').doc('connection').delete();
+                
+                log('✅ Firebase conectado com sucesso!', 'success');
+                updateProgress('Firebase inicializado com sucesso', 'success');
+                
+                // Verificar domínio
+                document.getElementById('domainStatus').textContent = '✅ Conectado';
+                document.getElementById('domainStatus').style.color = '#155724';
+                
+                document.getElementById('checkBtn').disabled = false;
+                updateStats({
+                    'Status': 'Conectado',
+                    'Projeto': 'barbeariasamuelabreu',
+                    'Domínio': 'barbeariasamuelabreu.com.br'
+                });
+                
+            } catch (error) {
+                log(`❌ Erro na inicialização: ${error.message}`, 'error');
+                updateProgress(`Erro na inicialização: ${error.message}`, 'error');
+                document.getElementById('domainStatus').textContent = '❌ Erro na conexão';
+                document.getElementById('domainStatus').style.color = '#721c24';
+            } finally {
+                initBtn.disabled = false;
+                initBtn.textContent = '🔥 Inicializar Firebase';
+            }
+        }
+
+        async function checkCollections() {
+            const checkBtn = document.getElementById('checkBtn');
+            checkBtn.disabled = true;
+            checkBtn.textContent = '🔍 Verificando...';
+            
+            try {
+                log('🔍 Verificando estrutura do Firestore...', 'info');
+                missingCollections = [];
+                existingData = {};
+                
+                let totalCollections = 0;
+                let existingCollections = 0;
+                let totalDocuments = 0;
+                
+                for (const [collectionName, collectionInfo] of Object.entries(requiredStructure.collections)) {
+                    totalCollections++;
+                    log(`📂 Verificando coleção: ${collectionName}`, 'info');
+                    
+                    try {
+                        const snapshot = await db.collection(collectionName).limit(1).get();
+                        
+                        if (snapshot.empty) {
+                            log(`📭 Coleção ${collectionName} está vazia`, 'warning');
+                            missingCollections.push(collectionName);
+                        } else {
+                            log(`✅ Coleção ${collectionName} existe com dados`, 'success');
+                            existingCollections++;
+                            
+                            // Contar documentos
+                            const fullSnapshot = await db.collection(collectionName).get();
+                            totalDocuments += fullSnapshot.size;
+                            existingData[collectionName] = fullSnapshot.size;
+                        }
+                    } catch (error) {
+                        log(`❌ Erro ao verificar ${collectionName}: ${error.message}`, 'error');
+                        missingCollections.push(collectionName);
+                    }
+                }
+                
+                // Verificar documentos específicos do siteContent
+                if (!missingCollections.includes('siteContent')) {
+                    const requiredDocs = ['main', 'schedule', 'contact'];
+                    for (const docName of requiredDocs) {
+                        try {
+                            const doc = await db.collection('siteContent').doc(docName).get();
+                            if (!doc.exists) {
+                                log(`📝 Documento siteContent/${docName} não existe`, 'warning');
+                                if (!missingCollections.includes('siteContent-docs')) {
+                                    missingCollections.push('siteContent-docs');
+                                }
+                            }
+                        } catch (error) {
+                            log(`❌ Erro ao verificar documento ${docName}: ${error.message}`, 'error');
+                        }
+                    }
+                }
+                
+                updateStats({
+                    'Coleções Total': totalCollections,
+                    'Coleções Existentes': existingCollections,
+                    'Documentos': totalDocuments,
+                    'Faltando': missingCollections.length
+                });
+                
+                if (missingCollections.length > 0) {
+                    updateProgress(`${missingCollections.length} coleções/documentos precisam ser criados`, 'warning');
+                    log(`📋 Faltam: ${missingCollections.join(', ')}`, 'warning');
+                    document.getElementById('createBtn').disabled = false;
+                } else {
+                    updateProgress('✅ Todas as coleções estão configuradas!', 'success');
+                    document.getElementById('testBtn').disabled = false;
+                }
+                
+            } catch (error) {
+                log(`❌ Erro na verificação: ${error.message}`, 'error');
+                updateProgress(`Erro na verificação: ${error.message}`, 'error');
+            } finally {
+                checkBtn.disabled = false;
+                checkBtn.textContent = '🔍 Verificar Coleções';
+            }
+        }
+
+        async function createMissingFields() {
+            const createBtn = document.getElementById('createBtn');
+            createBtn.disabled = true;
+            createBtn.textContent = '➕ Criando...';
+            
+            try {
+                log('➕ Criando campos e coleções faltantes...', 'info');
+                let createdCount = 0;
+                
+                for (const collectionName of missingCollections) {
+                    if (collectionName === 'siteContent-docs') {
+                        // Criar documentos específicos do siteContent
+                        const docs = requiredStructure.collections.siteContent.documents;
+                        for (const [docName, docData] of Object.entries(docs)) {
+                            try {
+                                await db.collection('siteContent').doc(docName).set(docData);
+                                log(`✅ Documento siteContent/${docName} criado`, 'success');
+                                createdCount++;
+                            } catch (error) {
+                                log(`❌ Erro ao criar documento ${docName}: ${error.message}`, 'error');
+                            }
+                        }
+                        continue;
+                    }
+                    
+                    const collectionInfo = requiredStructure.collections[collectionName];
+                    if (!collectionInfo) continue;
+                    
+                    try {
+                        // Criar documento de amostra
+                        const sampleDoc = collectionInfo.sampleData || { created: new Date() };
+                        await db.collection(collectionName).add(sampleDoc);
+                        log(`✅ Coleção ${collectionName} criada com dados de amostra`, 'success');
+                        createdCount++;
+                        
+                    } catch (error) {
+                        log(`❌ Erro ao criar coleção ${collectionName}: ${error.message}`, 'error');
+                    }
+                }
+                
+                // Criar configurações do site
+                try {
+                    await db.collection('siteContent').doc('settings').set(requiredStructure.siteSettings);
+                    log('✅ Configurações do site criadas', 'success');
+                    createdCount++;
+                } catch (error) {
+                    log(`⚠️ Configurações já existem ou erro: ${error.message}`, 'warning');
+                }
+                
+                updateProgress(`✅ ${createdCount} itens criados com sucesso!`, 'success');
+                log(`🎉 Inicialização completa! ${createdCount} itens criados.`, 'success');
+                
+                // Habilitar teste
+                document.getElementById('testBtn').disabled = false;
+                
+            } catch (error) {
+                log(`❌ Erro na criação: ${error.message}`, 'error');
+                updateProgress(`Erro na criação: ${error.message}`, 'error');
+            } finally {
+                createBtn.disabled = false;
+                createBtn.textContent = '➕ Criar Campos Faltantes';
+            }
+        }
+
+        async function testUpload() {
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = '📤 Testando...';
+            
+            try {
+                log('📤 Testando upload no Firebase Storage...', 'info');
+                
+                // Criar um arquivo de teste
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 200;
+                const ctx = canvas.getContext('2d');
+                
+                // Desenhar um teste simples
+                ctx.fillStyle = '#007bff';
+                ctx.fillRect(0, 0, 200, 200);
+                ctx.fillStyle = '#fff';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('TESTE', 100, 100);
+                ctx.fillText('UPLOAD', 100, 120);
+                
+                canvas.toBlob(async (blob) => {
+                    try {
+                        const fileName = `teste/upload-test-${Date.now()}.png`;
+                        const storageRef = storage.ref(fileName);
+                        
+                        log(`📤 Fazendo upload: ${fileName}`, 'info');
+                        const uploadTask = await storageRef.put(blob);
+                        
+                        const downloadURL = await uploadTask.ref.getDownloadURL();
+                        log(`✅ Upload realizado com sucesso!`, 'success');
+                        log(`🔗 URL: ${downloadURL}`, 'info');
+                        
+                        // Testar salvamento no Firestore
+                        await db.collection('images').add({
+                            title: 'Teste de Upload',
+                            category: 'teste',
+                            url: downloadURL,
+                            storagePath: fileName,
+                            createdAt: firebase.firestore.Timestamp.now(),
+                            isTest: true
+                        });
+                        
+                        log(`✅ Dados salvos no Firestore!`, 'success');
+                        updateProgress('✅ Teste de upload realizado com sucesso!', 'success');
+                        
+                        updateStats({
+                            'Firebase': '✅ OK',
+                            'Storage': '✅ OK', 
+                            'Firestore': '✅ OK',
+                            'Upload': '✅ Funcionando'
+                        });
+                        
+                        log('🎉 Sistema completamente funcional!', 'success');
+                        
+                    } catch (error) {
+                        log(`❌ Erro no teste de upload: ${error.message}`, 'error');
+                        updateProgress(`Erro no teste: ${error.message}`, 'error');
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ Erro no teste: ${error.message}`, 'error');
+                updateProgress(`Erro no teste: ${error.message}`, 'error');
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '📤 Testar Upload';
+            }
+        }
+
+        // Auto-inicializar quando a página carregar
+        window.addEventListener('load', () => {
+            log('🚀 Inicializador carregado para barbeariasamuelabreu.com.br', 'info');
+            updateProgress('Sistema carregado - Clique em "Inicializar Firebase" para começar', 'info');
+        });
+    </script>
+</body>
+</html>

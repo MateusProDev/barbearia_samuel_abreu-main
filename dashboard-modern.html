@@ -1565,31 +1565,10 @@
                     this.storage = firebase.storage();
                     this.auth = firebase.auth();
                     
-                    // Configurar autenticação anônima para uploads
-                    this.setupAnonymousAuth();
+                    // ✅ SISTEMA SIMPLIFICADO - SEM AUTENTICAÇÃO  
+                    console.log('✅ Firebase inicializado - Sistema pronto para uploads');
                 } else {
                     console.log('Firebase não carregado, funcionalidades limitadas');
-                }
-            }
-
-            async setupAnonymousAuth() {
-                try {
-                    if (!this.auth) {
-                        console.warn('Firebase Auth não disponível');
-                        return;
-                    }
-                    
-                    // Verificar se já está autenticado
-                    if (!this.auth.currentUser) {
-                        console.log('🔐 Fazendo autenticação anônima para permitir uploads...');
-                        await this.auth.signInAnonymously();
-                        console.log('✅ Autenticação anônima realizada com sucesso');
-                    } else {
-                        console.log('✅ Já autenticado:', this.auth.currentUser.uid);
-                    }
-                } catch (error) {
-                    console.error('Erro na autenticação anônima:', error);
-                    this.showNotification('Problema de autenticação. Upload pode não funcionar.', 'error');
                 }
             }
 
@@ -2118,11 +2097,8 @@
                         throw new Error('Firebase Storage ou Firestore não disponível');
                     }
 
-                    // Garantir que está autenticado antes do upload
-                    if (this.auth && !this.auth.currentUser) {
-                        console.log('🔐 Autenticando para upload...');
-                        await this.setupAnonymousAuth();
-                    }
+                    // ✅ SISTEMA SIMPLIFICADO - SEM AUTENTICAÇÃO
+                    console.log('� Iniciando upload direto (sem autenticação)...');
 
                     // Se for hero, verificar se já existe uma imagem e removê-la
                     if (category === 'hero') {

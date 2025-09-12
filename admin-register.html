@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Sistema de Cadastro Admin - Barbearia Samuel Abreu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #cce7ff;
+            color: #0c5aa6;
+            border: 1px solid #b5d8ff;
+        }
+
+        .user-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-email {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .user-uid {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-family: monospace;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 12px;
+            width: auto;
+            margin: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Gerenciar Usuários Admin</h1>
+        <p class="subtitle">Sistema de cadastro e verificação de usuários</p>
+
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="showTab('register')">📝 Cadastrar</button>
+            <button class="tab-btn" onclick="showTab('list')">👥 Listar</button>
+            <button class="tab-btn" onclick="showTab('verify')">🔍 Verificar</button>
+        </div>
+
+        <div id="messages"></div>
+
+        <!-- Aba Cadastrar -->
+        <div id="register-tab" class="tab-content active">
+            <div class="alert alert-info">
+                <strong>💡 Info:</strong> Use este formulário para cadastrar novos usuários admin no Firebase Authentication.
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerEmail">📧 Email do Admin:</label>
+                    <input type="email" id="registerEmail" class="form-control" 
+                           placeholder="samueldomingos63@gmail.com" 
+                           value="samueldomingos63@gmail.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerPassword">🔒 Senha:</label>
+                    <input type="password" id="registerPassword" class="form-control" 
+                           placeholder="Digite uma senha forte (mín. 6 caracteres)" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">🔒 Confirmar Senha:</label>
+                    <input type="password" id="confirmPassword" class="form-control" 
+                           placeholder="Digite a senha novamente" required>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    ✅ Cadastrar Admin
+                </button>
+            </form>
+        </div>
+
+        <!-- Aba Listar -->
+        <div id="list-tab" class="tab-content">
+            <div class="alert alert-info">
+                <strong>👥 Lista de Usuários:</strong> Todos os usuários cadastrados no Firebase Auth.
+            </div>
+
+            <button class="btn btn-primary" onclick="loadUsers()">
+                🔄 Recarregar Lista
+            </button>
+
+            <div id="usersList">
+                <div class="loading">🔄 Clique em "Recarregar Lista" para ver os usuários</div>
+            </div>
+        </div>
+
+        <!-- Aba Verificar -->
+        <div id="verify-tab" class="tab-content">
+            <div class="alert alert-info">
+                <strong>🔍 Verificar Login:</strong> Teste se um email/senha funciona.
+            </div>
+
+            <form id="verifyForm">
+                <div class="form-group">
+                    <label for="verifyEmail">📧 Email:</label>
+                    <input type="email" id="verifyEmail" class="form-control" 
+                           placeholder="samueldomingos63@gmail.com" 
+                           value="samueldomingos63@gmail.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="verifyPassword">🔒 Senha:</label>
+                    <input type="password" id="verifyPassword" class="form-control" 
+                           placeholder="Digite a senha para testar" required>
+                </div>
+
+                <button type="submit" class="btn btn-warning">
+                    🔍 Testar Login
+                </button>
+            </form>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="login.html" style="color: #3498db; text-decoration: none;">
+                ← Voltar para o Login
+            </a>
+        </div>
+    </div>
+
+    <!-- Firebase v10 -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase Configuration - CORRETAS
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function showMessage(message, type) {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    messagesDiv.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Register Form
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validation
+            if (password !== confirmPassword) {
+                showMessage('❌ As senhas não coincidem!', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showMessage('❌ A senha deve ter pelo menos 6 caracteres!', 'error');
+                return;
+            }
+            
+            try {
+                showMessage('🔄 Cadastrando usuário...', 'info');
+                
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                showMessage(`✅ Usuário cadastrado com sucesso!<br>
+                            <strong>Email:</strong> ${user.email}<br>
+                            <strong>UID:</strong> ${user.uid}<br>
+                            <strong>📝 Agora você pode fazer login no sistema!</strong>`, 'success');
+                
+                // Clear form
+                document.getElementById('registerForm').reset();
+                document.getElementById('registerEmail').value = email;
+                
+            } catch (error) {
+                console.error('Erro no cadastro:', error);
+                
+                let errorMessage = '❌ Erro ao cadastrar: ';
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage += 'Este email já está cadastrado!';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'Email inválido!';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage += 'Senha muito fraca!';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                showMessage(errorMessage, 'error');
+            }
+        });
+
+        // Verify Form
+        document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('verifyEmail').value;
+            const password = document.getElementById('verifyPassword').value;
+            
+            try {
+                showMessage('🔄 Testando login...', 'info');
+                
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                showMessage(`✅ Login funcionou perfeitamente!<br>
+                            <strong>Email:</strong> ${user.email}<br>
+                            <strong>UID:</strong> ${user.uid}<br>
+                            <strong>🎉 Credenciais válidas - pode fazer login no sistema!</strong>`, 'success');
+                
+                // Sign out after test
+                await auth.signOut();
+                
+            } catch (error) {
+                console.error('Erro no teste:', error);
+                
+                let errorMessage = '❌ Teste de login falhou: ';
+                
+                switch (error.code) {
+                    case 'auth/invalid-credential':
+                    case 'auth/wrong-password':
+                        errorMessage += 'Email ou senha incorretos!';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage += 'Usuário não encontrado! Precisa cadastrar primeiro.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'Email inválido!';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage += 'Muitas tentativas. Aguarde um pouco.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                showMessage(errorMessage, 'error');
+            }
+        });
+
+        async function loadUsers() {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '<div class="loading">🔄 Carregando usuários...</div>';
+            
+            try {
+                // Note: Firebase Client SDK não permite listar todos os usuários
+                // Isso requer Firebase Admin SDK no backend
+                showMessage(`⚠️ <strong>Limitação do Firebase Client SDK:</strong><br>
+                           Para listar todos os usuários, é necessário usar o Firebase Admin SDK no backend.<br>
+                           <strong>Alternativa:</strong> Verifique o Firebase Console em:<br>
+                           <a href="https://console.firebase.google.com/project/barbeariasamuelabreu/authentication/users" target="_blank">
+                           https://console.firebase.google.com/project/barbeariasamuelabreu/authentication/users
+                           </a>`, 'info');
+                
+                usersList.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>📋 Para ver todos os usuários:</strong><br>
+                        1. Acesse o <a href="https://console.firebase.google.com/project/barbeariasamuelabreu/authentication/users" target="_blank">Firebase Console</a><br>
+                        2. Vá em Authentication → Users<br>
+                        3. Lá você verá todos os usuários cadastrados
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+                usersList.innerHTML = `<div class="alert alert-error">❌ Erro: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize
+        console.log('🔧 Sistema de gerenciamento de usuários carregado');
+        showMessage('🔧 Sistema pronto! Use as abas acima para cadastrar, verificar ou listar usuários.', 'info');
+    </script>
+</body>
+</html>

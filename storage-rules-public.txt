@@ -1,0 +1,19 @@
+// Regras temporárias para Firebase Storage - PERMITIR UPLOADS PÚBLICOS
+// ⚠️ ATENÇÃO: Estas regras são permissivas para desenvolvimento
+// Considere adicionar restrições antes de ir para produção
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permitir leitura e escrita para todos os arquivos
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+// INSTRUÇÕES PARA APLICAR:
+// 1. No Firebase Console, vá em Storage > Rules
+// 2. Cole o código acima 
+// 3. Clique em "Publicar"
+// 4. Teste o upload no dashboard
