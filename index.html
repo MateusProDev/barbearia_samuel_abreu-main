@@ -249,7 +249,15 @@
             <div class="carousel-container fade-in">
                 <div class="carousel-wrapper">
                     <div class="carousel-track" id="carouselTrack">
-                        <!-- Slides serão adicionados dinamicamente pelo Firebase -->
+                        <!-- Slide padrão enquanto Firebase carrega -->
+                        <div class="carousel-slide active" data-default="true">
+                            <img src="img/proprietario.jpeg" alt="Samuel Abreu - Proprietário">
+                            <div class="carousel-caption">
+                                <h4>Samuel Abreu</h4>
+                                <p>Proprietário e Barbeiro Master</p>
+                            </div>
+                        </div>
+                        <!-- Slides do Firebase serão adicionados aqui -->
                     </div>
                     
                     <!-- Controles do carousel -->
@@ -257,7 +265,9 @@
                     <button class="carousel-btn carousel-btn-next" onclick="moveCarousel(1)">›</button>
                     
                     <!-- Indicadores -->
-                    <div class="carousel-indicators" id="carouselIndicators"></div>
+                    <div class="carousel-indicators" id="carouselIndicators">
+                        <button class="indicator active" data-slide="0"></button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -264,6 +264,13 @@ class RealtimeSync {
             return;
         }
 
+        // Remove slides padrão na primeira imagem do Firebase
+        const defaultSlides = aboutContainer.querySelectorAll('[data-default="true"]');
+        if (defaultSlides.length > 0) {
+            console.log('🔄 Removendo slides padrão...');
+            defaultSlides.forEach(slide => slide.remove());
+        }
+
         // Check if image already exists
         let existingMember = document.querySelector(`[data-image-id="${imageData.id || imageData.title}"]`);
         
