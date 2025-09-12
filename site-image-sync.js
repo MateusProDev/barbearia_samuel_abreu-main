@@ -16,8 +16,12 @@ class SiteImageSync {
         console.log('🚀 Iniciando sistema de sincronização...');
         await this.waitForFirebase();
         this.setupFirebaseListener();
-        this.setupDashboardListener();
         await this.loadImagesFromFirebase();
+        
+        // Configurar observer após inicialização
+        setTimeout(() => {
+            this.setupDOMObserver();
+        }, 1000);
     }
 
     waitForFirebase() {
@@ -632,32 +636,29 @@ class SiteImageSync {
         console.log('✅ Visibilidade da galeria garantida');
     }
 
-    // Configurar listener para atualizações em tempo real do dashboard
-    setupDashboardListener() {
-        console.log('👂 Configurando listener para atualizações do dashboard...');
-        
-        // Listener para eventos do dashboard
-        window.addEventListener('dashboardImageUpdate', (event) => {
-            const { section, action, data } = event.detail;
-            console.log(`📡 Atualização recebida do dashboard: ${action} na seção ${section}`);
-            
-            // Forçar recarregamento das imagens
-            setTimeout(() => {
-                this.loadImagesFromFirebase();
-            }, 500);
+    // Configurar observador para mudanças no DOM
+    setupDOMObserver() {
+        const galleryGrid = document.querySelector('.gallery-grid');
+        if (!galleryGrid) return;
+
+        // Observer para mudanças na galeria
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    console.log('🔍 Observer: Novos elementos adicionados à galeria');
+                    setTimeout(() => {
+                        this.ensureGalleryVisible();
+                    }, 200);
+                }
+            });
         });
-        
-        // Listener legado
-        window.addEventListener('imagesUpdated', (event) => {
-            const { category } = event.detail;
-            console.log(`📡 Atualização legada recebida: categoria ${category}`);
-            
-            setTimeout(() => {
-                this.loadImagesFromFirebase();
-            }, 500);
+
+        observer.observe(galleryGrid, {
+            childList: true,
+            subtree: true
         });
-        
-        console.log('✅ Listeners do dashboard configurados');
+
+        console.log('👁️ Observer da galeria configurado');
     }
 
     // Modal para visualizar imagens
@@ -716,32 +717,41 @@ class SiteImageSync {
         }, 10);
     }
 
-    updateTeamSection(sobreImages) {
-        console.log(`👥 Atualizando carrossel #sobre com ${sobreImages?.length || 0} imagens...`);
+    updateTeamSection(teamImages) {
+        console.log(`👥 Iniciando atualização da seção de equipe...`);
         
-        // Procurar pelo carrossel na seção #sobre
-        const aboutSection = document.querySelector('#sobre');
-        if (!aboutSection) {
-            console.warn('⚠️ Seção #sobre não encontrada');
+        // Procurar pelo carrossel da equipe no site
+        const teamContainer = document.querySelector('.carousel-container') || 
+                             document.querySelector('.team-carousel') ||
+                             document.querySelector('#equipe .carousel-container');
+        
+        if (!teamContainer) {
+            console.warn('⚠️ Container da equipe não encontrado');
             return;
         }
 
-        const carouselTrack = aboutSection.querySelector('.carousel-track');
+        console.log('✅ Container da equipe encontrado');
+
+        // Buscar o track do carrossel
+        const carouselTrack = teamContainer.querySelector('.carousel-track') || 
+                             teamContainer.querySelector('#carouselTrack');
+        
         if (!carouselTrack) {
-            console.warn('⚠️ .carousel-track não encontrado na seção #sobre');
+            console.warn('⚠️ Carousel track não encontrado');
             return;
         }
 
-        console.log('✅ Carrossel da seção #sobre encontrado');
+        console.log(`📊 Imagens de equipe disponíveis: ${teamImages ? teamImages.length : 0}`);
 
-        let imagesToUse = sobreImages && sobreImages.length > 0 ? sobreImages : [];
+        // Se não há imagens da seção "team", usar imagens padrão ou manter as existentes
+        let imagesToUse = teamImages && teamImages.length > 0 ? teamImages : this.getDefaultTeamImages();
 
-        if (imagesToUse.length === 0) {
-            console.log('⚠️ Nenhuma imagem específica da equipe - mantendo slides existentes');
+        if (!imagesToUse || imagesToUse.length === 0) {
+            console.log('⚠️ Nenhuma imagem disponível, mantendo slides existentes');
             return;
         }
 
-        console.log(`🔄 Atualizando carrossel #sobre com ${imagesToUse.length} imagens`);
+        console.log(`🔄 Atualizando carrossel com ${imagesToUse.length} imagens`);
 
         // Limpar slides existentes
         carouselTrack.innerHTML = '';
@@ -778,13 +788,19 @@ class SiteImageSync {
         });
 
         // Atualizar indicadores do carrossel
-        const carouselContainer = aboutSection.querySelector('.carousel-container');
-        if (carouselContainer) {
-            this.updateCarouselIndicators(carouselContainer, imagesToUse.length);
-            this.reinitializeCarousel(carouselContainer);
-        }
+        this.updateCarouselIndicators(teamContainer, imagesToUse.length);
 
-        console.log(`🎉 Carrossel #sobre atualizado com ${imagesToUse.length} slides`);
+        // Reinicializar carrossel se necessário
+        this.reinitializeCarousel(teamContainer);
+
+        console.log(`🎉 Carrossel da equipe atualizado com ${imagesToUse.length} slides`);
+        
+        // Disparar evento para reinicializar animações
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
+                detail: { section: 'team', count: imagesToUse.length } 
+            }));
+        }, 300);
     }
 
     // Obter imagens padrão da equipe se não houver imagens específicas
@@ -1038,57 +1054,37 @@ class SiteImageSync {
         return this.currentImages;
     }
 
-    // Função de debug específica para verificar alinhamento com dashboard
-    debugSiteAlignment() {
-        console.log('🔍 DEBUG: Verificando alinhamento site ↔ dashboard');
+    // Debug específico para o carrossel
+    debugCarousel() {
+        console.log('🎠 DEBUG CARROSSEL:');
         
-        // Verificar seções do site
-        const heroSection = document.querySelector('.hero');
-        const servicosSection = document.querySelector('#servicos');
-        const cortesSection = document.querySelector('#cortes');  
-        const sobreSection = document.querySelector('#sobre');
+        const carouselContainer = document.querySelector('.carousel-container');
+        const carouselTrack = document.querySelector('.carousel-track');
+        const slides = document.querySelectorAll('.carousel-slide');
+        const indicators = document.querySelectorAll('.indicator');
         
-        console.log('� Seções do site encontradas:');
-        console.log('  - .hero (banner):', heroSection ? '✅' : '❌');
-        console.log('  - #servicos:', servicosSection ? '✅' : '❌');
-        console.log('  - #cortes (galeria):', cortesSection ? '✅' : '❌');
-        console.log('  - #sobre (carrossel):', sobreSection ? '✅' : '❌');
+        console.log('📦 Container:', carouselContainer ? 'encontrado' : 'NÃO encontrado');
+        console.log('🛤️ Track:', carouselTrack ? 'encontrado' : 'NÃO encontrado');
+        console.log('🎞️ Slides:', slides.length, 'encontrados');
+        console.log('🔘 Indicadores:', indicators.length, 'encontrados');
         
-        // Verificar grids específicos
-        const servicesGrid = servicosSection?.querySelector('.services-grid');
-        const galleryGrid = cortesSection?.querySelector('.gallery-grid');
-        const carouselTrack = sobreSection?.querySelector('.carousel-track');
-        
-        console.log('� Containers de conteúdo:');
-        console.log('  - .services-grid:', servicesGrid ? '✅' : '❌');
-        console.log('  - .gallery-grid:', galleryGrid ? '✅' : '❌');
-        console.log('  - .carousel-track:', carouselTrack ? '✅' : '❌');
-        
-        // Verificar imagens atuais organizadas
-        if (this.currentImages && this.currentImages.length > 0) {
-            const organized = this.organizeImagesByCategory();
-            console.log('📊 Distribuição atual das imagens:');
-            console.log(`  - hero: ${organized.hero.length} imagens`);
-            console.log(`  - servicos: ${organized.servicos.length} imagens`);
-            console.log(`  - cortes: ${organized.cortes.length} imagens`);
-            console.log(`  - sobre: ${organized.sobre.length} imagens`);
-            
-            // Contar imagens visíveis no DOM
-            const visibleServices = servicesGrid?.children.length || 0;
-            const visibleGallery = galleryGrid?.children.length || 0;  
-            const visibleSlides = carouselTrack?.children.length || 0;
-            
-            console.log('👁️ Imagens visíveis no DOM:');
-            console.log(`  - Serviços: ${visibleServices} cards`);
-            console.log(`  - Galeria: ${visibleGallery} items`);
-            console.log(`  - Carrossel: ${visibleSlides} slides`);
+        if (slides.length === 0) {
+            console.warn('⚠️ PROBLEMA: Nenhum slide encontrado no carrossel!');
+            console.log('🔧 Tentando corrigir...');
+            this.fixEmptyCarousel();
         }
         
-        return {
-            sections: { heroSection, servicosSection, cortesSection, sobreSection },
-            containers: { servicesGrid, galleryGrid, carouselTrack },
-            images: this.currentImages
-        };
+        // Verificar se há slides vazios
+        const emptySlides = Array.from(slides).filter(slide => {
+            const img = slide.querySelector('img');
+            return !img || !img.src || img.src.includes('undefined');
+        });
+        
+        if (emptySlides.length > 0) {
+            console.warn(`⚠️ PROBLEMA: ${emptySlides.length} slides vazios encontrados!`);
+            console.log('🔧 Corrigindo slides vazios...');
+            this.fixEmptySlides(emptySlides);
+        }
     }
 
     // Corrigir carrossel vazio
@@ -1268,19 +1264,7 @@ function setupAutoDebug() {
     window.debugSite = () => {
         if (siteSync) {
             console.log('🔍 Debug completo do site...');
-            console.log('📊 Total de imagens:', siteSync.currentImages?.length || 0);
-            
-            // Debug do alinhamento
-            siteSync.debugSiteAlignment();
-            
             return siteSync.debugImages();
-        }
-    };
-    
-    // Debug específico de alinhamento  
-    window.debugAlignment = () => {
-        if (siteSync) {
-            return siteSync.debugSiteAlignment();
         }
     };
     

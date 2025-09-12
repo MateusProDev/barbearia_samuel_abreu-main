@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Teste Firebase - Configurações Corretas</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .test-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .status.loading {
+            background: #ffeaa7;
+            color: #b8860b;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .config-display {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Teste de Conexão Firebase - Configurações Corretas</h1>
+        
+        <div class="test-section">
+            <h3>📋 Configuração Firebase</h3>
+            <div class="config-display" id="configDisplay">Carregando configuração...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔌 Status de Conexão</h3>
+            <div id="connectionStatus" class="status loading">🔄 Testando conexão...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔐 Status de Autenticação</h3>
+            <div id="authStatus" class="status loading">🔄 Verificando autenticação...</div>
+            <button class="btn" onclick="testAuth()">🔑 Testar Login Anônimo</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>💾 Teste do Firestore</h3>
+            <div id="firestoreStatus" class="status loading">🔄 Verificando Firestore...</div>
+            <button class="btn" onclick="testFirestore()">📊 Testar Leitura</button>
+            <button class="btn" onclick="testWrite()">✍️ Testar Escrita</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📦 Teste do Storage</h3>
+            <div id="storageStatus" class="status loading">🔄 Verificando Storage...</div>
+            <button class="btn" onclick="testStorage()">📁 Testar Storage</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 Log de Atividades</h3>
+            <div id="logContainer" class="log">Iniciando testes...\n</div>
+            <button class="btn" onclick="clearLog()">🧹 Limpar Log</button>
+        </div>
+    </div>
+
+    <!-- Firebase v10 -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // 🔥 Configuração Firebase - AS CORRETAS FORNECIDAS PELO USUÁRIO
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        let db, storage, auth;
+
+        function log(message) {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `[${timestamp}] ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = message;
+        }
+
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = 'Log limpo...\n';
+        }
+
+        // Inicializar Firebase
+        async function initFirebase() {
+            try {
+                log('🚀 Inicializando Firebase...');
+                
+                // Mostrar configuração
+                document.getElementById('configDisplay').innerHTML = 
+                    `projectId: "${firebaseConfig.projectId}"\n` +
+                    `authDomain: "${firebaseConfig.authDomain}"\n` +
+                    `storageBucket: "${firebaseConfig.storageBucket}"\n` +
+                    `messagingSenderId: "${firebaseConfig.messagingSenderId}"\n` +
+                    `appId: "${firebaseConfig.appId}"`;
+
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                storage = firebase.storage();
+                auth = firebase.auth();
+                
+                log('✅ Firebase inicializado com sucesso!');
+                updateStatus('connectionStatus', 'success', '✅ Conexão estabelecida');
+                
+                // Testar componentes automaticamente
+                await testAuth();
+                await testFirestore();
+                await testStorage();
+                
+            } catch (error) {
+                log('❌ Erro ao inicializar Firebase: ' + error.message);
+                updateStatus('connectionStatus', 'error', '❌ Erro de conexão');
+            }
+        }
+
+        async function testAuth() {
+            try {
+                log('🔐 Testando autenticação anônima...');
+                updateStatus('authStatus', 'loading', '🔄 Testando auth...');
+                
+                const userCredential = await auth.signInAnonymously();
+                const user = userCredential.user;
+                
+                log(`✅ Login anônimo realizado! UID: ${user.uid}`);
+                updateStatus('authStatus', 'success', '✅ Autenticação OK');
+                
+            } catch (error) {
+                log('❌ Erro na autenticação: ' + error.message);
+                updateStatus('authStatus', 'error', '❌ Erro de auth');
+            }
+        }
+
+        async function testFirestore() {
+            try {
+                log('📊 Testando Firestore...');
+                updateStatus('firestoreStatus', 'loading', '🔄 Testando Firestore...');
+                
+                // Tentar ler coleção de imagens
+                const snapshot = await db.collection('images').limit(5).get();
+                
+                log(`✅ Firestore OK! Encontradas ${snapshot.size} imagens`);
+                updateStatus('firestoreStatus', 'success', `✅ Firestore OK (${snapshot.size} docs)`);
+                
+                // Listar algumas imagens
+                if (!snapshot.empty) {
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        log(`📷 Imagem: ${data.title || data.name || doc.id} (${data.category || 'sem categoria'})`);
+                    });
+                } else {
+                    log('📭 Nenhuma imagem encontrada na coleção');
+                }
+                
+            } catch (error) {
+                log('❌ Erro no Firestore: ' + error.message);
+                updateStatus('firestoreStatus', 'error', '❌ Erro no Firestore');
+            }
+        }
+
+        async function testWrite() {
+            try {
+                log('✍️ Testando escrita no Firestore...');
+                
+                const testData = {
+                    teste: true,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    message: 'Teste de conexão realizado com sucesso'
+                };
+                
+                await db.collection('testes').add(testData);
+                log('✅ Escrita no Firestore realizada com sucesso!');
+                
+            } catch (error) {
+                log('❌ Erro na escrita: ' + error.message);
+            }
+        }
+
+        async function testStorage() {
+            try {
+                log('📦 Testando Firebase Storage...');
+                updateStatus('storageStatus', 'loading', '🔄 Testando Storage...');
+                
+                // Testar referência ao storage
+                const storageRef = storage.ref();
+                const rootRef = await storageRef.listAll();
+                
+                log(`✅ Storage OK! Encontradas ${rootRef.prefixes.length} pastas e ${rootRef.items.length} arquivos na raiz`);
+                updateStatus('storageStatus', 'success', `✅ Storage OK`);
+                
+                // Listar algumas pastas
+                if (rootRef.prefixes.length > 0) {
+                    log('📁 Pastas encontradas:');
+                    rootRef.prefixes.forEach(prefix => {
+                        log(`   📂 ${prefix.name}`);
+                    });
+                }
+                
+            } catch (error) {
+                log('❌ Erro no Storage: ' + error.message);
+                updateStatus('storageStatus', 'error', '❌ Erro no Storage');
+            }
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', initFirebase);
+    </script>
+</body>
+</html>

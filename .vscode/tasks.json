@@ -11,6 +11,16 @@
 			"group": "build",
 			"isBackground": false,
 			"problemMatcher": []
+		},
+		{
+			"label": "Abrir Teste Dashboard",
+			"type": "shell",
+			"command": "start",
+			"args": [
+				"test-dashboard.html"
+			],
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }
