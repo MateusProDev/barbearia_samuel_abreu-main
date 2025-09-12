@@ -438,5 +438,143 @@
     
     <!-- Sistema de Animações de Scroll -->
     <script src="scroll-animations.js"></script>
+
+    <!-- JavaScript do Carrossel -->
+    <script>
+        let currentSlide = 0;
+        let carouselInterval;
+
+        // Function to move carousel to specific slide
+        function goToSlide(slideIndex) {
+            console.log(`🎯 goToSlide chamada com índice: ${slideIndex}`);
+            const track = document.getElementById('carouselTrack');
+            const slides = track.querySelectorAll('.carousel-slide');
+            console.log(`📊 Total de slides: ${slides.length}`);
+            
+            if (slideIndex >= 0 && slideIndex < slides.length) {
+                currentSlide = slideIndex;
+                console.log(`📍 currentSlide atualizado para: ${currentSlide}`);
+                
+                // Update transform
+                const translateX = -currentSlide * 100;
+                track.style.transform = `translateX(${translateX}%)`;
+                console.log(`🔄 Transform aplicado: translateX(${translateX}%)`);
+                
+                // Update indicators
+                document.querySelectorAll('.indicators .indicator').forEach((ind, i) => {
+                    if (i === currentSlide) {
+                        ind.classList.add('active');
+                        console.log(`✅ Indicador ${i} ativado`);
+                    } else {
+                        ind.classList.remove('active');
+                    }
+                });
+            } else {
+                console.warn(`⚠️ Índice inválido: ${slideIndex}, total de slides: ${slides.length}`);
+            }
+        }
+
+        function moveCarousel(direction) {
+            const track = document.getElementById('carouselTrack');
+            const slides = track.querySelectorAll('.carousel-slide');
+            const indicators = document.querySelectorAll('.carousel-indicators .indicator');
+            
+            console.log(`🎠 moveCarousel: direction=${direction}, slides=${slides.length}, currentSlide=${currentSlide}`);
+            
+            if (slides.length === 0) {
+                console.log('⚠️ Nenhum slide encontrado');
+                return;
+            }
+            
+            // Remove active class from current slide
+            if (slides[currentSlide]) {
+                slides[currentSlide].classList.remove('active');
+                console.log(`❌ Removido active do slide ${currentSlide}`);
+            }
+            if (indicators[currentSlide]) {
+                indicators[currentSlide].classList.remove('active');
+            }
+            
+            // Update slide index
+            currentSlide += direction;
+            
+            // Loop carousel
+            if (currentSlide >= slides.length) currentSlide = 0;
+            if (currentSlide < 0) currentSlide = slides.length - 1;
+            
+            console.log(`➡️ Novo currentSlide: ${currentSlide}`);
+            
+            // Add active class to new slide
+            if (slides[currentSlide]) {
+                slides[currentSlide].classList.add('active');
+                console.log(`✅ Adicionado active ao slide ${currentSlide}`);
+            }
+            if (indicators[currentSlide]) {
+                indicators[currentSlide].classList.add('active');
+            }
+            
+            // Move carousel
+            const translateX = -currentSlide * 100;
+            track.style.transform = `translateX(${translateX}%)`;
+            console.log(`🔄 Transform aplicado: translateX(${translateX}%)`);
+        }
+
+        function goToSlide(slideIndex) {
+            const direction = slideIndex - currentSlide;
+            moveCarousel(direction);
+        }
+
+        function startCarouselAutoplay() {
+            console.log('▶️ Iniciando autoplay do carrossel');
+            carouselInterval = setInterval(() => {
+                console.log('⏱️ Autoplay tick - movendo carrossel');
+                moveCarousel(1);
+            }, 5000); // Muda a cada 5 segundos
+        }
+
+        function stopCarouselAutoplay() {
+            if (carouselInterval) {
+                console.log('⏸️ Parando autoplay do carrossel');
+                clearInterval(carouselInterval);
+            }
+        }
+
+        // Initialize carousel when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Inicializando carrossel...');
+            
+            // Check if there are slides
+            const slides = document.querySelectorAll('#carouselTrack .carousel-slide');
+            console.log(`📊 Slides encontrados na inicialização: ${slides.length}`);
+            
+            if (slides.length > 1) {
+                // Start autoplay only if there are multiple slides
+                startCarouselAutoplay();
+            } else {
+                console.log('ℹ️ Autoplay não iniciado - apenas 1 slide ou nenhum slide');
+            }
+            
+            // Pause autoplay on hover
+            const carouselContainer = document.querySelector('.carousel-container');
+            if (carouselContainer) {
+                carouselContainer.addEventListener('mouseenter', stopCarouselAutoplay);
+                carouselContainer.addEventListener('mouseleave', () => {
+                    const currentSlides = document.querySelectorAll('#carouselTrack .carousel-slide');
+                    if (currentSlides.length > 1) {
+                        startCarouselAutoplay();
+                    }
+                });
+            }
+            
+            // Add click listeners to indicators
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('indicator')) {
+                    const slideIndex = parseInt(e.target.getAttribute('data-slide'));
+                    console.log(`👆 Clique no indicador ${slideIndex}`);
+                    goToSlide(slideIndex);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

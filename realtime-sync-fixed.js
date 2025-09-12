@@ -62,12 +62,22 @@ class RealtimeSync {
             
             console.log(`📥 Encontradas ${snapshot.size} imagens ativas no Firestore`);
             
+            // Debug detalhado
+            const categories = {};
             snapshot.forEach((doc) => {
                 const imageData = doc.data();
-                console.log(`🖼️ Processando imagem: ${imageData.title} (${imageData.category})`);
+                const category = imageData.category || imageData.section;
+                
+                if (!categories[category]) {
+                    categories[category] = [];
+                }
+                categories[category].push(imageData.title);
+                
+                console.log(`🖼️ Processando imagem: ${imageData.title} (categoria: ${category})`);
                 this.handleImageAdded(imageData, doc.id);
             });
             
+            console.log('📊 Resumo por categoria:', categories);
             console.log('✅ Imagens existentes carregadas!');
         } catch (error) {
             console.error('❌ Erro ao carregar imagens existentes:', error);
@@ -275,15 +285,19 @@ class RealtimeSync {
         let existingMember = document.querySelector(`[data-image-id="${imageData.id || imageData.title}"]`);
         
         if (!existingMember && imageData.active) {
-            // Check if this is the first slide
-            const isFirstSlide = aboutContainer.children.length === 0;
+            // Remove default slides on first real image
+            this.removeDefaultSlides();
+            
+            // Check if this is the first real slide
+            const realSlides = aboutContainer.querySelectorAll('.carousel-slide:not([data-default])');
+            const isFirstSlide = realSlides.length === 0;
             
             // Create new carousel slide
             const memberSlide = document.createElement('div');
             memberSlide.className = isFirstSlide ? 'carousel-slide active' : 'carousel-slide';
             memberSlide.setAttribute('data-image-id', imageData.id || imageData.title);
             memberSlide.innerHTML = `
-                <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
+                <img src="${imageData.url || imageData.cloudinaryUrl}" alt="${imageData.title}" loading="lazy">
                 <div class="carousel-caption">
                     <h4>${imageData.title}</h4>
                     ${imageData.description ? `<p>${imageData.description}</p>` : '<p>Membro da Equipe</p>'}
@@ -291,6 +305,7 @@ class RealtimeSync {
             `;
             
             aboutContainer.appendChild(memberSlide);
+            console.log(`✅ Slide adicionado: ${imageData.title} com URL: ${imageData.url || imageData.cloudinaryUrl}`);
             
             // Update carousel indicators
             this.updateCarouselIndicators();
@@ -310,9 +325,17 @@ class RealtimeSync {
         }
     }
 
+    removeDefaultSlides() {
+        const defaultSlides = document.querySelectorAll('.carousel-slide[data-default="true"]');
+        defaultSlides.forEach(slide => {
+            slide.remove();
+            console.log('🗑️ Slide padrão removido');
+        });
+    }
+
     updateCarouselIndicators() {
         const indicatorsContainer = document.getElementById('carouselIndicators');
-        const slides = document.querySelectorAll('.carousel-slide');
+        const slides = document.querySelectorAll('#carouselTrack .carousel-slide');
         
         if (indicatorsContainer && slides.length > 0) {
             indicatorsContainer.innerHTML = '';
@@ -322,6 +345,12 @@ class RealtimeSync {
                 indicator.setAttribute('data-slide', index);
                 indicatorsContainer.appendChild(indicator);
             });
+            
+            // Restart carousel if there are multiple slides
+            if (slides.length > 1 && typeof window.startCarouselAutoplay === 'function') {
+                window.stopCarouselAutoplay();
+                window.startCarouselAutoplay();
+            }
         }
     }
 
