@@ -1646,22 +1646,19 @@
                 try {
                     console.log('🔍 Tentando acessar coleções do Firebase...');
                     
-                    // Definir categorias com informações
+                    // Definir apenas as categorias que existem no site
                     const categories = {
-                        'banner': { name: '🎯 Banner Principal', icon: '🎯', maxImages: 1, warning: 'Apenas uma imagem é permitida para o banner principal' },
+                        'hero': { name: '🎯 Hero/Banner Principal', icon: '🎯', maxImages: 1, warning: 'Apenas uma imagem é permitida para o banner principal' },
                         'servicos': { name: '✂️ Serviços', icon: '✂️' },
                         'galeria': { name: '🖼️ Galeria de Trabalhos', icon: '🖼️' },
-                        'equipe': { name: '👥 Nossa Equipe', icon: '👥' },
-                        'instalacoes': { name: '🏪 Instalações', icon: '🏪' },
-                        'promocoes': { name: '🎉 Promoções', icon: '🎉' },
-                        'antesDepois': { name: '⭐ Antes e Depois', icon: '⭐' }
+                        'equipe': { name: '👥 Nossa Equipe', icon: '👥' }
                     };
 
                     const allImages = {};
                     let totalImages = 0;
 
-                    // Tentar múltiplas estratégias de carregamento
-                    const collectionNames = ['images', 'gallery', 'galeria', 'banner', 'servicos', 'equipe', 'instalacoes', 'promocoes', 'antesDepois', 'siteImages'];
+                    // Tentar carregar apenas das coleções que correspondem às seções do site
+                    const collectionNames = ['hero', 'servicos', 'galeria', 'equipe', 'images', 'siteImages', 'banner'];
                     
                     for (const collectionName of collectionNames) {
                         try {
@@ -1673,7 +1670,18 @@
                                 
                                 snapshot.forEach(doc => {
                                     const data = doc.data();
-                                    const category = data.category || data.secao || collectionName;
+                                    let category = data.category || data.secao || collectionName;
+                                    
+                                    // Normalizar categoria para as seções do site
+                                    if (category === 'banner' || category === 'banner-principal') {
+                                        category = 'hero';
+                                    }
+                                    
+                                    // Apenas incluir se for uma categoria válida do site
+                                    if (!categories[category]) {
+                                        console.log(`⚠️ Categoria ${category} não é uma seção válida do site, ignorando...`);
+                                        return;
+                                    }
                                     
                                     if (!allImages[category]) {
                                         allImages[category] = [];
@@ -1687,6 +1695,11 @@
                                         uploadedAt: data.createdAt || data.timestamp || new Date()
                                     });
                                     totalImages++;
+                                    console.log(`🖼️ Imagem adicionada à categoria ${category}:`, {
+                                        id: doc.id,
+                                        url: data.url || data.imageUrl || data.src || '',
+                                        title: data.title || data.titulo || data.name || 'Sem título'
+                                    });
                                 });
                             } else {
                                 console.log(`📭 Coleção ${collectionName} está vazia`);
@@ -1710,23 +1723,24 @@
                     if (sectionsContainer) {
                         sectionsContainer.innerHTML = '';
                         
-                        // Sempre mostrar banner primeiro (mesmo se vazio)
-                        if (categories.banner) {
-                            const bannerImages = allImages.banner || [];
-                            sectionsContainer.appendChild(this.renderImageSection('banner', bannerImages, categories.banner));
+                        // Sempre mostrar hero primeiro (mesmo se vazio)
+                        if (categories.hero) {
+                            const heroImages = allImages.hero || [];
+                            sectionsContainer.appendChild(this.renderImageSection('hero', heroImages, categories.hero));
                         }
                         
-                        // Renderizar outras seções
-                        Object.keys(allImages).forEach(category => {
-                            if (category !== 'banner' && categories[category]) {
+                        // Renderizar outras seções na ordem correta
+                        const sectionOrder = ['servicos', 'galeria', 'equipe'];
+                        sectionOrder.forEach(category => {
+                            if (allImages[category]) {
                                 const sectionElement = this.renderImageSection(category, allImages[category], categories[category]);
                                 sectionsContainer.appendChild(sectionElement);
                             }
                         });
                         
                         // Mostrar seções vazias importantes
-                        Object.keys(categories).forEach(category => {
-                            if (category !== 'banner' && !allImages[category]) {
+                        sectionOrder.forEach(category => {
+                            if (!allImages[category]) {
                                 const sectionElement = this.renderImageSection(category, [], categories[category]);
                                 sectionsContainer.appendChild(sectionElement);
                             }
@@ -1750,9 +1764,9 @@
                 const currentImagesGrid = document.getElementById('currentImagesGrid');
                 if (!currentImagesGrid) return;
 
-                // Estrutura de imagens locais organizadas por seção
+                // Estrutura de imagens locais organizadas apenas pelas seções do site
                 const localImages = {
-                    banner: [
+                    hero: [
                         { title: 'Banner Principal', url: 'img/barbearia.jpeg', description: 'Imagem principal da barbearia' }
                     ],
                     servicos: [
@@ -1774,28 +1788,30 @@
                         { title: 'Profissionalismo', url: 'img/proprietario 2.jpeg', description: '11 anos de experiência' },
                         { title: 'Kaio', url: 'img/kaioUm.jpeg', description: 'Barbeiro profissional' },
                         { title: 'Equipe Trabalhando', url: 'img/kaioDois.jpeg', description: 'Dedicação ao trabalho' }
-                    ],
-                    instalacoes: [
-                        { title: 'Ambiente Moderno', url: 'img/pro1.jpeg', description: 'Estrutura da barbearia' },
-                        { title: 'Trabalho Especializado', url: 'img/pro2.jpeg', description: 'Atenção aos detalhes' },
-                        { title: 'Resultados', url: 'img/pro3.jpeg', description: 'Clientes satisfeitos' }
-                    ],
-                    promocoes: [
-                        { title: 'Luzes', url: 'img/luzes.jpeg', description: 'Serviço de luzes' },
-                        { title: 'Platinado', url: 'img/platinado.jpeg', description: 'Coloração platinada' }
                     ]
                 };
 
-                // Renderizar seções
-                currentImagesGrid.innerHTML = '';
+                const sectionsContainer = document.getElementById('sectionsContainer');
+                if (!sectionsContainer) return;
 
+                // Renderizar apenas as seções do site
+                sectionsContainer.innerHTML = '';
+                
+                // Definir categorias das seções do site
+                const categories = {
+                    'hero': { name: '🎯 Hero/Banner Principal', icon: '🎯', maxImages: 1 },
+                    'servicos': { name: '✂️ Serviços', icon: '✂️' },
+                    'galeria': { name: '🖼️ Galeria de Trabalhos', icon: '🖼️' },
+                    'equipe': { name: '👥 Nossa Equipe', icon: '👥' }
+                };
+
+                // Renderizar na ordem correta
                 Object.keys(localImages).forEach(category => {
-                    const categoryImages = localImages[category];
-                    const sectionElement = this.renderImageSection(category, categoryImages, {
-                        name: this.getCategoryDisplayName(category),
-                        limit: category === 'banner' ? 1 : null
-                    });
-                    currentImagesGrid.appendChild(sectionElement);
+                    if (categories[category]) {
+                        const categoryImages = localImages[category];
+                        const sectionElement = this.renderImageSection(category, categoryImages, categories[category]);
+                        sectionsContainer.appendChild(sectionElement);
+                    }
                 });
 
                 this.showNotification('✅ Imagens locais carregadas com sucesso!', 'success');
@@ -1803,19 +1819,17 @@
 
             getCategoryDisplayName(category) {
                 const names = {
-                    banner: '🎯 Banner Principal',
+                    hero: '🎯 Hero/Banner Principal',
                     servicos: '✂️ Serviços',
                     galeria: '🖼️ Galeria de Trabalhos',
-                    equipe: '👥 Nossa Equipe',
-                    instalacoes: '🏪 Instalações',
-                    promocoes: '🎉 Promoções'
+                    equipe: '👥 Nossa Equipe'
                 };
                 return names[category] || category;
             }
 
             renderImageSection(category, images, categoryInfo) {
-                const isBanner = category === 'banner';
-                const sectionClass = isBanner ? 'section-group banner-section' : 'section-group';
+                const isHero = category === 'hero';
+                const sectionClass = isHero ? 'section-group hero-section' : 'section-group';
                 
                 // Criar elemento DOM
                 const sectionElement = document.createElement('div');
@@ -1833,10 +1847,10 @@
                 `;
                 sectionElement.appendChild(header);
 
-                // Aviso especial para banner
-                if (isBanner && categoryInfo.warning) {
+                // Aviso especial para hero
+                if (isHero && categoryInfo.warning) {
                     const warning = document.createElement('div');
-                    warning.className = 'banner-warning';
+                    warning.className = 'hero-warning';
                     warning.innerHTML = `
                         <i class="fas fa-info-circle"></i>
                         ${categoryInfo.warning}
@@ -1861,9 +1875,32 @@
                     images.forEach(image => {
                         const imageItem = document.createElement('div');
                         imageItem.className = 'image-item';
+                        
+                        // Criar elemento de imagem com melhor tratamento de erro
+                        const imgElement = document.createElement('img');
+                        imgElement.src = image.url;
+                        imgElement.alt = image.title || 'Sem título';
+                        imgElement.loading = 'lazy';
+                        
+                        // Tratamento de erro para imagens do Firebase
+                        imgElement.onerror = function() {
+                            console.warn(`❌ Erro ao carregar imagem: ${image.url}`);
+                            this.style.display = 'none';
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'image-error';
+                            errorDiv.innerHTML = `
+                                <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #ff6b35; margin-bottom: 10px;"></i>
+                                    <p style="margin: 5px 0; font-size: 14px;">Imagem não encontrada</p>
+                                    <small style="color: #999;">${image.title || 'Sem título'}</small>
+                                    <br>
+                                    <small style="color: #999; font-size: 11px;">Firebase: ${image.url.substring(0, 50)}...</small>
+                                </div>
+                            `;
+                            imageItem.insertBefore(errorDiv, imageItem.firstChild);
+                        };
+                        
                         imageItem.innerHTML = `
-                            <img src="${image.url}" alt="${image.title}" 
-                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlbSBOw6NvIEVuY29udHJhZGE8L3RleHQ+PC9zdmc+'">
                             <div class="image-overlay">
                                 <div class="image-title">${image.title || 'Sem título'}</div>
                                 <div class="image-actions">
@@ -1877,6 +1914,9 @@
                                 </div>
                             </div>
                         `;
+                        
+                        // Inserir a imagem no início do item
+                        imageItem.insertBefore(imgElement, imageItem.firstChild);
                         imagesGrid.appendChild(imageItem);
                     });
                 }
