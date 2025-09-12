@@ -1,0 +1,111 @@
+rules_version = '2';
+
+// 🔥 Firebase Storage Rules - Barbearia Samuel Abreu
+// 🔓 ACESSO PÚBLICO TOTAL PARA DESENVOLVIMENTO E FUNCIONALIDADE COMPLETA
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // 📖 LEITURA PÚBLICA TOTAL - Para exibição das imagens no site
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+    
+    // ✍️ ESCRITA LIVRE PARA DESENVOLVIMENTO - Remove bloqueios CORS
+    match /{allPaths=**} {
+      allow write: if true;  // Permitir upload sem autenticação durante desenvolvimento
+      allow delete: if true; // Permitir exclusão
+    }
+    
+    // 🎯 SEÇÃO HERO/BANNER PRINCIPAL
+    match /hero/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // ✂️ SEÇÃO SERVIÇOS
+    match /servicos/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 🖼️ SEÇÃO GALERIA
+    match /galeria/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 👥 SEÇÃO EQUIPE
+    match /equipe/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 🏪 SEÇÃO INSTALAÇÕES
+    match /instalacoes/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 🎉 SEÇÃO PROMOÇÕES
+    match /promocoes/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // ⭐ SEÇÃO ANTES E DEPOIS
+    match /antesDepois/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 📸 UPLOADS GERAIS DE IMAGENS
+    match /uploads/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 🔄 UPLOADS TEMPORÁRIOS
+    match /temp/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 📁 BACKUP DE IMAGENS
+    match /backup/{allPaths=**} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 🎨 ASSETS DO TEMA
+    match /theme/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 📱 ÍCONES E LOGOS
+    match /icons/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+    
+    // 📄 DOCUMENTOS E CERTIFICADOS
+    match /documents/{fileName} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+    }
+  }
+}

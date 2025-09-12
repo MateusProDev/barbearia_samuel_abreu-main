@@ -16,12 +16,8 @@ class SiteImageSync {
         console.log('🚀 Iniciando sistema de sincronização...');
         await this.waitForFirebase();
         this.setupFirebaseListener();
+        this.setupDashboardListener();
         await this.loadImagesFromFirebase();
-        
-        // Configurar observer após inicialização
-        setTimeout(() => {
-            this.setupDOMObserver();
-        }, 1000);
     }
 
     waitForFirebase() {
@@ -235,56 +231,73 @@ class SiteImageSync {
             return;
         }
 
-        // Organizar imagens por categoria
+        // Organizar imagens por categoria das seções reais do site
         const imagesByCategory = this.organizeImagesByCategory();
         
-        // Atualizar cada seção
+        // Atualizar cada seção do site real
         this.updateHeroSection(imagesByCategory.hero);
-        this.updateServicesSection(imagesByCategory.services);
-        this.updateGallerySection(imagesByCategory.gallery);
-        this.updateTeamSection(imagesByCategory.team);
-        this.updatePortfolioSection(imagesByCategory.portfolio);
-        this.updateInstalacoesSection(imagesByCategory.instalacoes);
+        this.updateServicesSection(imagesByCategory.servicos);   // #servicos
+        this.updateGallerySection(imagesByCategory.cortes);      // #cortes  
+        this.updateTeamSection(imagesByCategory.sobre);          // #sobre (carrossel)
         
-        // Atualizar seções combinadas se necessário
-        this.updateCombinedSections(imagesByCategory);
+        console.log('✅ Todas as seções do site atualizadas!');
     }
 
     organizeImagesByCategory() {
         const categories = {
             hero: [],
-            services: [],
-            gallery: [],
-            team: [],
-            portfolio: [],
-            instalacoes: []
+            servicos: [],  // Seção #servicos do site
+            cortes: [],    // Seção #cortes do site  
+            sobre: []      // Seção #sobre (carrossel) do site
         };
 
         this.currentImages.forEach(image => {
-            // Usar o campo 'section' do Firebase se disponível
-            const section = image.section || 'gallery';
+            // Usar o campo 'section' do Firebase se disponível, senão 'category'
+            let section = image.section || image.category || 'cortes';
+            
+            // Mapear categorias antigas para seções do site
+            if (section === 'galeria' || section === 'gallery') section = 'cortes';
+            if (section === 'equipe' || section === 'team') section = 'sobre';
+            if (section === 'banner') section = 'hero';
             
             if (categories[section]) {
                 categories[section].push(image);
             } else {
-                // Fallback para galeria se seção não reconhecida
-                categories.gallery.push(image);
+                // Fallback inteligente baseado no título
+                const title = (image.title || '').toLowerCase();
+                if (title.includes('banner') || title.includes('principal')) {
+                    categories.hero.push(image);
+                } else if (title.includes('serviço') || title.includes('servico') || 
+                         title.includes('cabelo') || title.includes('barba') ||
+                         title.includes('pigment') || title.includes('sobrancelha') ||
+                         title.includes('luzes') || title.includes('platinado') ||
+                         title.includes('tesoura')) {
+                    categories.servicos.push(image);
+                } else if (title.includes('samuel') || title.includes('kaio') || 
+                         title.includes('proprietario') || title.includes('barbeiro') ||
+                         title.includes('samu') || title.includes('equipe')) {
+                    categories.sobre.push(image);
+                } else {
+                    // Qualquer outra imagem vai para galeria de cortes
+                    categories.cortes.push(image);
+                }
             }
         });
 
-        console.log('📋 Imagens organizadas por seção Firebase:', {
+        console.log('📋 Imagens organizadas por seções reais do site:', {
             hero: categories.hero.length,
-            services: categories.services.length,
-            gallery: categories.gallery.length,
-            team: categories.team.length,
-            portfolio: categories.portfolio.length,
-            instalacoes: categories.instalacoes.length
+            servicos: categories.servicos.length,
+            cortes: categories.cortes.length,
+            sobre: categories.sobre.length
         });
 
         // Debug detalhado
-        console.log('🔍 DEBUG - Detalhes das imagens:');
-        this.currentImages.forEach((image, index) => {
-            console.log(`  ${index + 1}. "${image.title}" - Seção: "${image.section || 'indefinida'}" - URL: ${image.cloudinaryUrl || image.url || 'sem URL'}`);
+        console.log('🔍 DEBUG - Mapeamento das imagens:');
+        Object.keys(categories).forEach(section => {
+            console.log(`\n📂 Seção ${section.toUpperCase()}:`);
+            categories[section].forEach((image, index) => {
+                console.log(`  ${index + 1}. "${image.title}" - Original: "${image.section || image.category || 'indefinida'}" - URL: ${image.cloudinaryUrl || image.url || 'sem URL'}`);
+            });
         });
 
         return categories;
@@ -343,52 +356,52 @@ class SiteImageSync {
     }
 
     updateServicesSection(servicesImages) {
-        console.log(`✂️ Iniciando atualização da seção de serviços...`);
+        console.log(`✂️ Atualizando seção #servicos com ${servicesImages?.length || 0} imagens...`);
         
-        const servicesGrid = document.querySelector('.services-grid');
+        const servicesGrid = document.querySelector('#servicos .services-grid');
         
         if (!servicesGrid) {
-            console.warn('⚠️ Grid de serviços não encontrado');
+            console.warn('⚠️ Seção #servicos .services-grid não encontrada');
             return;
         }
 
-        console.log('✅ Grid de serviços encontrado');
+        console.log('✅ Seção #servicos encontrada');
 
-        // Se não há imagens específicas de serviços, usar imagens padrão ou manter as existentes
         let imagesToShow = servicesImages;
         
         if (!servicesImages || servicesImages.length === 0) {
-            console.warn('⚠️ Nenhuma imagem específica de serviços - usando imagens padrão');
-            imagesToShow = this.getDefaultServiceImages();
-        }
-
-        if (!imagesToShow || imagesToShow.length === 0) {
-            console.log('⚠️ Nenhuma imagem disponível, mantendo serviços existentes');
+            console.warn('⚠️ Nenhuma imagem específica de serviços - mantendo imagens existentes');
             return;
         }
 
-        console.log(`🔄 Atualizando serviços com ${imagesToShow.length} imagens`);
+        console.log(`🔄 Atualizando seção #servicos com ${imagesToShow.length} imagens`);
 
-        // Limpar grid atual
+        // Atualizar apenas imagens que são diferentes das atuais
+        const existingCards = servicesGrid.querySelectorAll('.service-card');
+        
+        // Se já tem o mesmo número de cards, verificar se precisam ser atualizados
+        if (existingCards.length === imagesToShow.length) {
+            let needsUpdate = false;
+            existingCards.forEach((card, index) => {
+                const img = card.querySelector('img');
+                const currentUrl = img ? img.src : '';
+                const newUrl = imagesToShow[index]?.cloudinaryUrl || imagesToShow[index]?.url || '';
+                
+                if (currentUrl !== newUrl) {
+                    needsUpdate = true;
+                }
+            });
+            
+            if (!needsUpdate) {
+                console.log('✅ Seção #servicos já está atualizada');
+                return;
+            }
+        }
+
+        // Limpar apenas se necessário
         servicesGrid.innerHTML = '';
 
-        // Adicionar indicador de carregamento elegante
-        const loadingElement = document.createElement('div');
-        loadingElement.className = 'services-loading';
-        loadingElement.innerHTML = `
-            <div class="loading-spinner"></div>
-            <p>Carregando serviços...</p>
-        `;
-        servicesGrid.appendChild(loadingElement);
-
-        // Remover loading após um tempo
-        setTimeout(() => {
-            if (loadingElement.parentNode) {
-                loadingElement.remove();
-            }
-        }, 1000);
-
-        // Adicionar novos cards de serviço
+        // Adicionar novas imagens
         imagesToShow.forEach((image, index) => {
             const imageUrl = image.cloudinaryUrl || image.url;
             if (!imageUrl) {
@@ -400,42 +413,24 @@ class SiteImageSync {
             
             const serviceCard = document.createElement('div');
             serviceCard.className = 'service-card fade-in';
-            serviceCard.style.opacity = '0'; // Começar invisível para animação
             serviceCard.innerHTML = `
                 <img src="${imageUrl}" alt="${image.title || 'Serviço'}" loading="lazy"
-                     onerror="console.error('❌ ERRO ao carregar imagem:', '${image.title}', this.src); this.style.display='none';"
-                     onload="this.parentElement.style.opacity='1'; console.log('✅ Imagem de serviço carregada:', '${image.title}')">
+                     onerror="console.error('❌ ERRO ao carregar imagem:', '${image.title}', this.src);"
+                     onload="console.log('✅ Imagem de serviço carregada:', '${image.title}')">
                 <h3>${(image.title || 'SERVIÇO PROFISSIONAL').toUpperCase()}</h3>
                 <p>${image.description || 'Serviço especializado com profissionais qualificados e técnicas modernas'}</p>
-                <div class="service-action">
-                    <a href="https://wa.link/19u2v4" target="_blank" class="btn-service">
-                        📱 Agendar
-                    </a>
-                </div>
             `;
             
             servicesGrid.appendChild(serviceCard);
             
-            // Animação de entrada com delay progressivo
+            // Animação de entrada
             setTimeout(() => {
                 serviceCard.style.opacity = '1';
                 serviceCard.style.transform = 'translateY(0)';
             }, index * 100);
         });
 
-        console.log(`✅ SEÇÃO DE SERVIÇOS TOTALMENTE ATUALIZADA: ${imagesToShow.length} serviços adicionados`);
-        
-        // Forçar exibição da seção
-        setTimeout(() => {
-            this.ensureServicesVisible();
-        }, 100);
-        
-        // Disparar evento para reinicializar animações
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
-                detail: { section: 'services', count: imagesToShow.length } 
-            }));
-        }, 200);
+        console.log(`✅ SEÇÃO #SERVICOS ATUALIZADA: ${imagesToShow.length} serviços`);
     }
 
     // Obter imagens padrão de serviços se não houver imagens específicas
@@ -516,53 +511,49 @@ class SiteImageSync {
         console.log('✅ Visibilidade da seção de serviços garantida');
     }
 
-    updateGallerySection(galleryImages) {
-        console.log(`🖼️ Iniciando atualização da galeria...`);
-        console.log(`📊 Imagens de galeria recebidas:`, galleryImages?.length || 0);
+    updateGallerySection(cortesImages) {
+        console.log(`🖼️ Atualizando seção #cortes com ${cortesImages?.length || 0} imagens...`);
         
-        const galleryGrid = document.querySelector('.gallery-grid');
+        const galleryGrid = document.querySelector('#cortes .gallery-grid');
         
         if (!galleryGrid) {
-            console.error('❌ .gallery-grid não encontrado no DOM');
+            console.error('❌ Seção #cortes .gallery-grid não encontrada no DOM');
             return;
         }
 
-        console.log('✅ Elemento .gallery-grid encontrado');
+        console.log('✅ Seção #cortes encontrada');
 
-        // Se não há imagens específicas de galeria, usar todas as imagens disponíveis
-        let imagesToShow = galleryImages;
+        let imagesToShow = cortesImages;
         
-        if (!galleryImages || galleryImages.length === 0) {
-            console.warn('⚠️ Nenhuma imagem específica de galeria - usando todas as imagens');
-            imagesToShow = this.currentImages || [];
-        }
-
-        if (imagesToShow.length === 0) {
-            console.warn('📭 Nenhuma imagem disponível para mostrar');
+        if (!cortesImages || cortesImages.length === 0) {
+            console.warn('⚠️ Nenhuma imagem específica de cortes - mantendo imagens existentes');
             return;
         }
 
-        console.log(`🔄 Atualizando galeria com ${imagesToShow.length} imagens`);
+        console.log(`🔄 Atualizando seção #cortes com ${imagesToShow.length} imagens`);
+
+        // Verificar se precisa atualizar
+        const existingItems = galleryGrid.querySelectorAll('.gallery-item');
+        if (existingItems.length === imagesToShow.length) {
+            let needsUpdate = false;
+            existingItems.forEach((item, index) => {
+                const img = item.querySelector('img');
+                const currentUrl = img ? img.src : '';
+                const newUrl = imagesToShow[index]?.cloudinaryUrl || imagesToShow[index]?.url || '';
+                
+                if (currentUrl !== newUrl) {
+                    needsUpdate = true;
+                }
+            });
+            
+            if (!needsUpdate) {
+                console.log('✅ Seção #cortes já está atualizada');
+                return;
+            }
+        }
 
         // Limpar galeria atual
         galleryGrid.innerHTML = '';
-        console.log('🧹 Galeria limpa');
-
-        // Adicionar indicador de carregamento elegante
-        const loadingElement = document.createElement('div');
-        loadingElement.className = 'gallery-loading';
-        loadingElement.innerHTML = `
-            <div class="loading-spinner"></div>
-            <p>Carregando galeria...</p>
-        `;
-        galleryGrid.appendChild(loadingElement);
-
-        // Remover loading após um tempo
-        setTimeout(() => {
-            if (loadingElement.parentNode) {
-                loadingElement.remove();
-            }
-        }, 1000);
 
         // Adicionar imagens
         imagesToShow.forEach((image, index) => {
@@ -572,51 +563,30 @@ class SiteImageSync {
                 return;
             }
 
-            console.log(`➕ Adicionando imagem ${index + 1}: "${image.title}"`);
-            console.log(`   URL: ${imageUrl}`);
-            console.log(`   Seção: ${image.section || 'não definida'}`);
+            console.log(`➕ Adicionando corte ${index + 1}: "${image.title}"`);
             
             const galleryItem = document.createElement('div');
             galleryItem.className = 'gallery-item fade-in';
-            galleryItem.style.opacity = '0'; // Começar invisível para animação
             galleryItem.innerHTML = `
                 <img src="${imageUrl}" alt="${image.title || 'Corte'}" loading="lazy"
-                     onerror="console.error('❌ ERRO ao carregar imagem:', '${image.title}', this.src); this.style.display='none';"
-                     onload="this.parentElement.style.opacity='1'; console.log('✅ Imagem carregada com sucesso:', '${image.title}')">
+                     onerror="console.error('❌ ERRO ao carregar imagem:', '${image.title}', this.src);"
+                     onload="console.log('✅ Imagem carregada:', '${image.title}')">
                 <div class="gallery-overlay">
                     <h3>${image.title || 'Corte Profissional'}</h3>
                     <p>${image.description || 'Estilo único e personalizado'}</p>
-                    <button class="view-btn">Ver Detalhes</button>
                 </div>
             `;
             
-            // Adicionar evento de clique para modal
-            galleryItem.addEventListener('click', () => {
-                this.openImageModal(imageUrl, image.title, image.description);
-            });
-            
             galleryGrid.appendChild(galleryItem);
             
-            // Animação de entrada com delay progressivo
+            // Animação de entrada
             setTimeout(() => {
                 galleryItem.style.opacity = '1';
                 galleryItem.style.transform = 'translateY(0)';
             }, index * 100);
         });
 
-        console.log(`✅ GALERIA TOTALMENTE ATUALIZADA: ${imagesToShow.length} imagens adicionadas`);
-        
-        // Forçar exibição da galeria (sem estilos de debug)
-        setTimeout(() => {
-            this.ensureGalleryVisible();
-        }, 100);
-        
-        // Disparar evento para reinicializar animações
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
-                detail: { section: 'gallery', count: imagesToShow.length } 
-            }));
-        }, 200);
+        console.log(`✅ SEÇÃO #CORTES ATUALIZADA: ${imagesToShow.length} imagens`);
     }
 
     // Método para garantir que a galeria seja visível
@@ -662,29 +632,32 @@ class SiteImageSync {
         console.log('✅ Visibilidade da galeria garantida');
     }
 
-    // Configurar observador para mudanças no DOM
-    setupDOMObserver() {
-        const galleryGrid = document.querySelector('.gallery-grid');
-        if (!galleryGrid) return;
-
-        // Observer para mudanças na galeria
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    console.log('🔍 Observer: Novos elementos adicionados à galeria');
-                    setTimeout(() => {
-                        this.ensureGalleryVisible();
-                    }, 200);
-                }
-            });
+    // Configurar listener para atualizações em tempo real do dashboard
+    setupDashboardListener() {
+        console.log('👂 Configurando listener para atualizações do dashboard...');
+        
+        // Listener para eventos do dashboard
+        window.addEventListener('dashboardImageUpdate', (event) => {
+            const { section, action, data } = event.detail;
+            console.log(`📡 Atualização recebida do dashboard: ${action} na seção ${section}`);
+            
+            // Forçar recarregamento das imagens
+            setTimeout(() => {
+                this.loadImagesFromFirebase();
+            }, 500);
         });
-
-        observer.observe(galleryGrid, {
-            childList: true,
-            subtree: true
+        
+        // Listener legado
+        window.addEventListener('imagesUpdated', (event) => {
+            const { category } = event.detail;
+            console.log(`📡 Atualização legada recebida: categoria ${category}`);
+            
+            setTimeout(() => {
+                this.loadImagesFromFirebase();
+            }, 500);
         });
-
-        console.log('👁️ Observer da galeria configurado');
+        
+        console.log('✅ Listeners do dashboard configurados');
     }
 
     // Modal para visualizar imagens
@@ -743,41 +716,32 @@ class SiteImageSync {
         }, 10);
     }
 
-    updateTeamSection(teamImages) {
-        console.log(`👥 Iniciando atualização da seção de equipe...`);
+    updateTeamSection(sobreImages) {
+        console.log(`👥 Atualizando carrossel #sobre com ${sobreImages?.length || 0} imagens...`);
         
-        // Procurar pelo carrossel da equipe no site
-        const teamContainer = document.querySelector('.carousel-container') || 
-                             document.querySelector('.team-carousel') ||
-                             document.querySelector('#equipe .carousel-container');
-        
-        if (!teamContainer) {
-            console.warn('⚠️ Container da equipe não encontrado');
+        // Procurar pelo carrossel na seção #sobre
+        const aboutSection = document.querySelector('#sobre');
+        if (!aboutSection) {
+            console.warn('⚠️ Seção #sobre não encontrada');
             return;
         }
 
-        console.log('✅ Container da equipe encontrado');
-
-        // Buscar o track do carrossel
-        const carouselTrack = teamContainer.querySelector('.carousel-track') || 
-                             teamContainer.querySelector('#carouselTrack');
-        
+        const carouselTrack = aboutSection.querySelector('.carousel-track');
         if (!carouselTrack) {
-            console.warn('⚠️ Carousel track não encontrado');
+            console.warn('⚠️ .carousel-track não encontrado na seção #sobre');
             return;
         }
 
-        console.log(`📊 Imagens de equipe disponíveis: ${teamImages ? teamImages.length : 0}`);
+        console.log('✅ Carrossel da seção #sobre encontrado');
 
-        // Se não há imagens da seção "team", usar imagens padrão ou manter as existentes
-        let imagesToUse = teamImages && teamImages.length > 0 ? teamImages : this.getDefaultTeamImages();
+        let imagesToUse = sobreImages && sobreImages.length > 0 ? sobreImages : [];
 
-        if (!imagesToUse || imagesToUse.length === 0) {
-            console.log('⚠️ Nenhuma imagem disponível, mantendo slides existentes');
+        if (imagesToUse.length === 0) {
+            console.log('⚠️ Nenhuma imagem específica da equipe - mantendo slides existentes');
             return;
         }
 
-        console.log(`🔄 Atualizando carrossel com ${imagesToUse.length} imagens`);
+        console.log(`🔄 Atualizando carrossel #sobre com ${imagesToUse.length} imagens`);
 
         // Limpar slides existentes
         carouselTrack.innerHTML = '';
@@ -814,19 +778,13 @@ class SiteImageSync {
         });
 
         // Atualizar indicadores do carrossel
-        this.updateCarouselIndicators(teamContainer, imagesToUse.length);
+        const carouselContainer = aboutSection.querySelector('.carousel-container');
+        if (carouselContainer) {
+            this.updateCarouselIndicators(carouselContainer, imagesToUse.length);
+            this.reinitializeCarousel(carouselContainer);
+        }
 
-        // Reinicializar carrossel se necessário
-        this.reinitializeCarousel(teamContainer);
-
-        console.log(`🎉 Carrossel da equipe atualizado com ${imagesToUse.length} slides`);
-        
-        // Disparar evento para reinicializar animações
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('siteContentUpdated', { 
-                detail: { section: 'team', count: imagesToUse.length } 
-            }));
-        }, 300);
+        console.log(`🎉 Carrossel #sobre atualizado com ${imagesToUse.length} slides`);
     }
 
     // Obter imagens padrão da equipe se não houver imagens específicas
@@ -1080,37 +1038,57 @@ class SiteImageSync {
         return this.currentImages;
     }
 
-    // Debug específico para o carrossel
-    debugCarousel() {
-        console.log('🎠 DEBUG CARROSSEL:');
+    // Função de debug específica para verificar alinhamento com dashboard
+    debugSiteAlignment() {
+        console.log('🔍 DEBUG: Verificando alinhamento site ↔ dashboard');
         
-        const carouselContainer = document.querySelector('.carousel-container');
-        const carouselTrack = document.querySelector('.carousel-track');
-        const slides = document.querySelectorAll('.carousel-slide');
-        const indicators = document.querySelectorAll('.indicator');
+        // Verificar seções do site
+        const heroSection = document.querySelector('.hero');
+        const servicosSection = document.querySelector('#servicos');
+        const cortesSection = document.querySelector('#cortes');  
+        const sobreSection = document.querySelector('#sobre');
         
-        console.log('📦 Container:', carouselContainer ? 'encontrado' : 'NÃO encontrado');
-        console.log('🛤️ Track:', carouselTrack ? 'encontrado' : 'NÃO encontrado');
-        console.log('🎞️ Slides:', slides.length, 'encontrados');
-        console.log('🔘 Indicadores:', indicators.length, 'encontrados');
+        console.log('� Seções do site encontradas:');
+        console.log('  - .hero (banner):', heroSection ? '✅' : '❌');
+        console.log('  - #servicos:', servicosSection ? '✅' : '❌');
+        console.log('  - #cortes (galeria):', cortesSection ? '✅' : '❌');
+        console.log('  - #sobre (carrossel):', sobreSection ? '✅' : '❌');
         
-        if (slides.length === 0) {
-            console.warn('⚠️ PROBLEMA: Nenhum slide encontrado no carrossel!');
-            console.log('🔧 Tentando corrigir...');
-            this.fixEmptyCarousel();
+        // Verificar grids específicos
+        const servicesGrid = servicosSection?.querySelector('.services-grid');
+        const galleryGrid = cortesSection?.querySelector('.gallery-grid');
+        const carouselTrack = sobreSection?.querySelector('.carousel-track');
+        
+        console.log('� Containers de conteúdo:');
+        console.log('  - .services-grid:', servicesGrid ? '✅' : '❌');
+        console.log('  - .gallery-grid:', galleryGrid ? '✅' : '❌');
+        console.log('  - .carousel-track:', carouselTrack ? '✅' : '❌');
+        
+        // Verificar imagens atuais organizadas
+        if (this.currentImages && this.currentImages.length > 0) {
+            const organized = this.organizeImagesByCategory();
+            console.log('📊 Distribuição atual das imagens:');
+            console.log(`  - hero: ${organized.hero.length} imagens`);
+            console.log(`  - servicos: ${organized.servicos.length} imagens`);
+            console.log(`  - cortes: ${organized.cortes.length} imagens`);
+            console.log(`  - sobre: ${organized.sobre.length} imagens`);
+            
+            // Contar imagens visíveis no DOM
+            const visibleServices = servicesGrid?.children.length || 0;
+            const visibleGallery = galleryGrid?.children.length || 0;  
+            const visibleSlides = carouselTrack?.children.length || 0;
+            
+            console.log('👁️ Imagens visíveis no DOM:');
+            console.log(`  - Serviços: ${visibleServices} cards`);
+            console.log(`  - Galeria: ${visibleGallery} items`);
+            console.log(`  - Carrossel: ${visibleSlides} slides`);
         }
         
-        // Verificar se há slides vazios
-        const emptySlides = Array.from(slides).filter(slide => {
-            const img = slide.querySelector('img');
-            return !img || !img.src || img.src.includes('undefined');
-        });
-        
-        if (emptySlides.length > 0) {
-            console.warn(`⚠️ PROBLEMA: ${emptySlides.length} slides vazios encontrados!`);
-            console.log('🔧 Corrigindo slides vazios...');
-            this.fixEmptySlides(emptySlides);
-        }
+        return {
+            sections: { heroSection, servicosSection, cortesSection, sobreSection },
+            containers: { servicesGrid, galleryGrid, carouselTrack },
+            images: this.currentImages
+        };
     }
 
     // Corrigir carrossel vazio
@@ -1290,7 +1268,19 @@ function setupAutoDebug() {
     window.debugSite = () => {
         if (siteSync) {
             console.log('🔍 Debug completo do site...');
+            console.log('📊 Total de imagens:', siteSync.currentImages?.length || 0);
+            
+            // Debug do alinhamento
+            siteSync.debugSiteAlignment();
+            
             return siteSync.debugImages();
+        }
+    };
+    
+    // Debug específico de alinhamento  
+    window.debugAlignment = () => {
+        if (siteSync) {
+            return siteSync.debugSiteAlignment();
         }
     };
     

@@ -14,6 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <style>
         :root {
@@ -1235,15 +1236,13 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Categoria</label>
+                            <label>Seção do Site</label>
                             <select id="imageCategory" class="form-input">
-                                <option value="banner">🎯 Banner Principal (Apenas 1 imagem)</option>
-                                <option value="servicos">✂️ Serviços</option>
-                                <option value="galeria">🖼️ Galeria de Trabalhos</option>
-                                <option value="equipe">👥 Nossa Equipe</option>
-                                <option value="instalacoes">🏪 Instalações</option>
-                                <option value="promocoes">🎉 Promoções</option>
-                                <option value="antes-depois">⭐ Antes e Depois</option>
+                                <option value="">Escolha a seção do site</option>
+                                <option value="hero">🎯 Hero/Banner Principal</option>
+                                <option value="servicos">✂️ Seção Serviços (#servicos)</option>
+                                <option value="cortes">🖼️ Galeria de Cortes (#cortes)</option>
+                                <option value="sobre">👥 Carrossel Equipe (#sobre)</option>
                             </select>
                         </div>
 
@@ -1564,8 +1563,33 @@
                     }
                     this.db = firebase.firestore();
                     this.storage = firebase.storage();
+                    this.auth = firebase.auth();
+                    
+                    // Configurar autenticação anônima para uploads
+                    this.setupAnonymousAuth();
                 } else {
                     console.log('Firebase não carregado, funcionalidades limitadas');
+                }
+            }
+
+            async setupAnonymousAuth() {
+                try {
+                    if (!this.auth) {
+                        console.warn('Firebase Auth não disponível');
+                        return;
+                    }
+                    
+                    // Verificar se já está autenticado
+                    if (!this.auth.currentUser) {
+                        console.log('🔐 Fazendo autenticação anônima para permitir uploads...');
+                        await this.auth.signInAnonymously();
+                        console.log('✅ Autenticação anônima realizada com sucesso');
+                    } else {
+                        console.log('✅ Já autenticado:', this.auth.currentUser.uid);
+                    }
+                } catch (error) {
+                    console.error('Erro na autenticação anônima:', error);
+                    this.showNotification('Problema de autenticação. Upload pode não funcionar.', 'error');
                 }
             }
 
@@ -1646,19 +1670,19 @@
                 try {
                     console.log('🔍 Tentando acessar coleções do Firebase...');
                     
-                    // Definir apenas as categorias que existem no site
+                    // Definir apenas as categorias que correspondem às seções do site
                     const categories = {
                         'hero': { name: '🎯 Hero/Banner Principal', icon: '🎯', maxImages: 1, warning: 'Apenas uma imagem é permitida para o banner principal' },
-                        'servicos': { name: '✂️ Serviços', icon: '✂️' },
-                        'galeria': { name: '🖼️ Galeria de Trabalhos', icon: '🖼️' },
-                        'equipe': { name: '👥 Nossa Equipe', icon: '👥' }
+                        'servicos': { name: '✂️ Seção Serviços (#servicos)', icon: '✂️', siteSection: '#servicos' },
+                        'cortes': { name: '🖼️ Galeria de Cortes (#cortes)', icon: '🖼️', siteSection: '#cortes' }, 
+                        'sobre': { name: '👥 Carrossel Equipe (#sobre)', icon: '👥', siteSection: '#sobre' }
                     };
 
                     const allImages = {};
                     let totalImages = 0;
 
                     // Tentar carregar apenas das coleções que correspondem às seções do site
-                    const collectionNames = ['hero', 'servicos', 'galeria', 'equipe', 'images', 'siteImages', 'banner'];
+                    const collectionNames = ['hero', 'servicos', 'cortes', 'sobre', 'images', 'siteImages', 'banner'];
                     
                     for (const collectionName of collectionNames) {
                         try {
@@ -1670,11 +1694,43 @@
                                 
                                 snapshot.forEach(doc => {
                                     const data = doc.data();
-                                    let category = data.category || data.secao || collectionName;
+                                    let category = data.category || data.secao || data.section || collectionName;
                                     
                                     // Normalizar categoria para as seções do site
                                     if (category === 'banner' || category === 'banner-principal') {
                                         category = 'hero';
+                                    }
+                                    
+                                    // Se for da coleção 'images', tentar identificar categoria pelo nome/título
+                                    if (collectionName === 'images' && !categories[category]) {
+                                        const title = data.title || data.titulo || data.name || '';
+                                        const filename = data.filename || '';
+                                        
+                                        // Identificar categoria baseada no conteúdo
+                                        if (title.toLowerCase().includes('banner') || title.toLowerCase().includes('principal')) {
+                                            category = 'hero';
+                                        } else if (title.toLowerCase().includes('serviço') || title.toLowerCase().includes('servico') || 
+                                                 title.toLowerCase().includes('cabelo') || title.toLowerCase().includes('barba') ||
+                                                 title.toLowerCase().includes('pigment') || title.toLowerCase().includes('sobrancelha') ||
+                                                 title.toLowerCase().includes('luzes') || title.toLowerCase().includes('platinado') ||
+                                                 title.toLowerCase().includes('tesoura')) {
+                                            category = 'servicos';
+                                        } else if (title.toLowerCase().includes('galeria') || title.toLowerCase().includes('trabalho') ||
+                                                 title.toLowerCase().includes('corte') || title.toLowerCase().includes('fade') ||
+                                                 title.toLowerCase().includes('social') || title.toLowerCase().includes('infantil') ||
+                                                 title.toLowerCase().includes('taper') || title.toLowerCase().includes('mid') ||
+                                                 title.toLowerCase().includes('high') || title.toLowerCase().includes('low') ||
+                                                 title.toLowerCase().includes('freestyle') || title.toLowerCase().includes('curly')) {
+                                            category = 'cortes';
+                                        } else if (title.toLowerCase().includes('equipe') || title.toLowerCase().includes('samuel') ||
+                                                 title.toLowerCase().includes('kaio') || title.toLowerCase().includes('barbeiro') ||
+                                                 title.toLowerCase().includes('samu') || title.toLowerCase().includes('proprietario')) {
+                                            category = 'sobre';
+                                        } else {
+                                            // Se não conseguir identificar, assumir como galeria de cortes por padrão
+                                            category = 'cortes';
+                                        }
+                                        console.log(`📝 Categoria identificada para "${title}": ${category}`);
                                     }
                                     
                                     // Apenas incluir se for uma categoria válida do site
@@ -1729,8 +1785,8 @@
                             sectionsContainer.appendChild(this.renderImageSection('hero', heroImages, categories.hero));
                         }
                         
-                        // Renderizar outras seções na ordem correta
-                        const sectionOrder = ['servicos', 'galeria', 'equipe'];
+                        // Renderizar outras seções na ordem correta das seções do site
+                        const sectionOrder = ['servicos', 'cortes', 'sobre'];
                         sectionOrder.forEach(category => {
                             if (allImages[category]) {
                                 const sectionElement = this.renderImageSection(category, allImages[category], categories[category]);
@@ -1764,7 +1820,7 @@
                 const currentImagesGrid = document.getElementById('currentImagesGrid');
                 if (!currentImagesGrid) return;
 
-                // Estrutura de imagens locais organizadas apenas pelas seções do site
+                // Estrutura de imagens locais organizadas pelas seções reais do site
                 const localImages = {
                     hero: [
                         { title: 'Banner Principal', url: 'img/barbearia.jpeg', description: 'Imagem principal da barbearia' }
@@ -1773,21 +1829,29 @@
                         { title: 'Cabelo e Barba', url: 'img/cabelo e barba.jpeg', description: 'Corte completo com barba' },
                         { title: 'Corte Infantil', url: 'img/Corte infantil.jpeg', description: 'Atendimento para crianças' },
                         { title: 'Pigmentação', url: 'img/pigmentacao.jpeg', description: 'Cobertura de fios brancos' },
-                        { title: 'Sobrancelha', url: 'img/sombracelha.jpeg', description: 'Design de sobrancelhas' }
+                        { title: 'Sobrancelha', url: 'img/sombracelha.jpeg', description: 'Design de sobrancelhas' },
+                        { title: 'Corte na Tesoura', url: 'img/classico na tesoura.jpeg', description: 'Técnica clássica' },
+                        { title: 'Luzes', url: 'img/luzes.jpeg', description: 'Mechas e luzes' },
+                        { title: 'Platinado', url: 'img/platinado.jpeg', description: 'Coloração platinada' }
                     ],
-                    galeria: [
+                    cortes: [
                         { title: 'Taper Fade Americano', url: 'img/Corte taper fade Americano.jpeg', description: 'Estilo americano moderno' },
                         { title: 'Mid Fade', url: 'img/Mid fade.jpeg', description: 'Degradê médio' },
                         { title: 'High Fade', url: 'img/High fadeDegradê alto.jpeg', description: 'Degradê alto' },
                         { title: 'Low Fade', url: 'img/Low fadeDegradê baixo.jpeg', description: 'Degradê baixo' },
                         { title: 'Social Clássico', url: 'img/Social Clássico..jpeg', description: 'Corte clássico' },
-                        { title: 'Freestyle', url: 'img/freestyle.jpeg', description: 'Corte personalizado' }
+                        { title: 'Corte Social', url: 'img/corte_social.jpeg', description: 'Modelo tradicional' }
                     ],
-                    equipe: [
+                    sobre: [
                         { title: 'Samuel Abreu', url: 'img/proprietario.jpeg', description: 'Proprietário e Barbeiro Master' },
+                        { title: 'Interior da Barbearia', url: 'img/barbearia.jpeg', description: 'Ambiente acolhedor' },
                         { title: 'Profissionalismo', url: 'img/proprietario 2.jpeg', description: '11 anos de experiência' },
-                        { title: 'Kaio', url: 'img/kaioUm.jpeg', description: 'Barbeiro profissional' },
-                        { title: 'Equipe Trabalhando', url: 'img/kaioDois.jpeg', description: 'Dedicação ao trabalho' }
+                        { title: 'Estrutura', url: 'img/pro1.jpeg', description: 'Equipamentos modernos' },
+                        { title: 'Dedicação', url: 'img/pro2.jpeg', description: 'Atenção aos detalhes' },
+                        { title: 'Resultados', url: 'img/pro3.jpeg', description: 'Clientes satisfeitos' },
+                        { title: 'Kaio', url: 'img/kaioUm.jpeg', description: 'Barbeiro Profissional' },
+                        { title: 'Equipe Trabalhando', url: 'img/kaioDois.jpeg', description: 'Dedicação ao trabalho' },
+                        { title: 'Samuel (Samu)', url: 'img/samu.jpeg', description: 'Arte e precisão' }
                     ]
                 };
 
@@ -1797,12 +1861,12 @@
                 // Renderizar apenas as seções do site
                 sectionsContainer.innerHTML = '';
                 
-                // Definir categorias das seções do site
+                // Definir categorias das seções reais do site  
                 const categories = {
                     'hero': { name: '🎯 Hero/Banner Principal', icon: '🎯', maxImages: 1 },
-                    'servicos': { name: '✂️ Serviços', icon: '✂️' },
-                    'galeria': { name: '🖼️ Galeria de Trabalhos', icon: '🖼️' },
-                    'equipe': { name: '👥 Nossa Equipe', icon: '👥' }
+                    'servicos': { name: '✂️ Seção Serviços (#servicos)', icon: '✂️' },
+                    'cortes': { name: '🖼️ Galeria de Cortes (#cortes)', icon: '🖼️' },
+                    'sobre': { name: '👥 Carrossel Equipe (#sobre)', icon: '👥' }
                 };
 
                 // Renderizar na ordem correta
@@ -1820,9 +1884,9 @@
             getCategoryDisplayName(category) {
                 const names = {
                     hero: '🎯 Hero/Banner Principal',
-                    servicos: '✂️ Serviços',
-                    galeria: '🖼️ Galeria de Trabalhos',
-                    equipe: '👥 Nossa Equipe'
+                    servicos: '✂️ Seção Serviços (#servicos)',
+                    cortes: '🖼️ Galeria de Cortes (#cortes)', 
+                    sobre: '👥 Carrossel Equipe (#sobre)'
                 };
                 return names[category] || category;
             }
@@ -1935,82 +1999,6 @@
                 if (emptyGallery) emptyGallery.style.display = 'block';
             }
 
-            loadLocalImages() {
-                console.log('📂 Carregando imagens locais de exemplo');
-                
-                const loadingImages = document.getElementById('loadingImages');
-                const sectionsContainer = document.getElementById('sectionsContainer');
-                const emptyGallery = document.getElementById('emptyGallery');
-
-                if (loadingImages) loadingImages.style.display = 'none';
-                if (emptyGallery) emptyGallery.style.display = 'none';
-                
-                // Imagens locais organizadas por seção
-                const localImages = {
-                    banner: [
-                        { id: 'banner_1', url: 'img/barbearia.jpeg', title: 'Banner Principal', category: 'banner' }
-                    ],
-                    servicos: [
-                        { id: 'servico_1', url: 'img/cabelo e barba.jpeg', title: 'Cabelo e Barba', category: 'servicos' },
-                        { id: 'servico_2', url: 'img/classico na tesoura.jpeg', title: 'Clássico na Tesoura', category: 'servicos' },
-                        { id: 'servico_3', url: 'img/corte de cabelo.jpg', title: 'Corte de Cabelo', category: 'servicos' },
-                        { id: 'servico_4', url: 'img/sombracelha.jpeg', title: 'Design de Sobrancelha', category: 'servicos' }
-                    ],
-                    galeria: [
-                        { id: 'galeria_1', url: 'img/Corte taper fade Americano.jpeg', title: 'Taper Fade Americano', category: 'galeria' },
-                        { id: 'galeria_2', url: 'img/High fadeDegradê alto.jpeg', title: 'High Fade - Degradê Alto', category: 'galeria' },
-                        { id: 'galeria_3', url: 'img/Low fadeDegradê baixo.jpeg', title: 'Low Fade - Degradê Baixo', category: 'galeria' },
-                        { id: 'galeria_4', url: 'img/Mid fade.jpeg', title: 'Mid Fade', category: 'galeria' },
-                        { id: 'galeria_5', url: 'img/Social Clássico..jpeg', title: 'Social Clássico', category: 'galeria' },
-                        { id: 'galeria_6', url: 'img/platinado.jpeg', title: 'Platinado', category: 'galeria' },
-                        { id: 'galeria_7', url: 'img/luzes.jpeg', title: 'Luzes', category: 'galeria' },
-                        { id: 'galeria_8', url: 'img/pigmentacao.jpeg', title: 'Pigmentação', category: 'galeria' }
-                    ],
-                    equipe: [
-                        { id: 'equipe_1', url: 'img/proprietario.jpeg', title: 'Samuel Abreu - Proprietário', category: 'equipe' },
-                        { id: 'equipe_2', url: 'img/proprietario 2.jpeg', title: 'Samuel Abreu', category: 'equipe' },
-                        { id: 'equipe_3', url: 'img/samu.jpeg', title: 'Samuel - Barbeiro', category: 'equipe' }
-                    ],
-                    instalacoes: [
-                        { id: 'instalacao_1', url: 'img/pro1.jpeg', title: 'Ambiente Profissional 1', category: 'instalacoes' },
-                        { id: 'instalacao_2', url: 'img/pro2.jpeg', title: 'Ambiente Profissional 2', category: 'instalacoes' },
-                        { id: 'instalacao_3', url: 'img/pro3.jpeg', title: 'Ambiente Profissional 3', category: 'instalacoes' }
-                    ]
-                };
-
-                const categories = {
-                    'banner': { name: '🎯 Banner Principal', icon: '🎯', maxImages: 1, warning: 'Apenas uma imagem é permitida para o banner principal' },
-                    'servicos': { name: '✂️ Serviços', icon: '✂️' },
-                    'galeria': { name: '🖼️ Galeria de Trabalhos', icon: '🖼️' },
-                    'equipe': { name: '👥 Nossa Equipe', icon: '👥' },
-                    'instalacoes': { name: '🏪 Instalações', icon: '🏪' },
-                    'promocoes': { name: '🎉 Promoções', icon: '🎉' },
-                    'antesDepois': { name: '⭐ Antes e Depois', icon: '⭐' }
-                };
-
-                if (sectionsContainer) {
-                    sectionsContainer.innerHTML = '';
-                    
-                    // Renderizar seções com imagens
-                    Object.keys(localImages).forEach(category => {
-                        if (categories[category]) {
-                            const sectionElement = this.renderImageSection(category, localImages[category], categories[category]);
-                            sectionsContainer.appendChild(sectionElement);
-                        }
-                    });
-                    
-                    // Mostrar seções vazias
-                    Object.keys(categories).forEach(category => {
-                        if (!localImages[category]) {
-                            const sectionElement = this.renderImageSection(category, [], categories[category]);
-                            sectionsContainer.appendChild(sectionElement);
-                        }
-                    });
-                }
-                
-                this.showNotification('📂 Imagens locais carregadas com sucesso', 'success');
-            }
-
             setupForms() {
                 // Configurar formulários do dashboard
                 const forms = document.querySelectorAll('#contentForm, #scheduleForm, #contactForm');
@@ -2088,11 +2076,11 @@
                             detail: { docId, data: formData }
                         }));
                     } else {
-                        this.showNotification('⚠️ Firebase não disponível - dados salvos localmente', 'info');
+                        this.showNotification('Firebase não disponível - dados salvos localmente', 'info');
                     }
                 } catch (error) {
                     console.error('Erro ao salvar:', error);
-                    this.showNotification('❌ Erro ao salvar dados', 'error');
+                    this.showNotification('Erro ao salvar dados', 'error');
                 } finally {
                     this.hideLoading();
                 }
@@ -2130,29 +2118,35 @@
                         throw new Error('Firebase Storage ou Firestore não disponível');
                     }
 
-                    // Se for banner, verificar se já existe uma imagem e removê-la
-                    if (category === 'banner') {
-                        await this.replaceBannerImage(file, title);
+                    // Garantir que está autenticado antes do upload
+                    if (this.auth && !this.auth.currentUser) {
+                        console.log('🔐 Autenticando para upload...');
+                        await this.setupAnonymousAuth();
+                    }
+
+                    // Se for hero, verificar se já existe uma imagem e removê-la
+                    if (category === 'hero') {
+                        await this.replaceHeroImage(file, title);
                     } else {
                         await this.addNewImage(file, title, category);
                     }
 
                 } catch (error) {
                     console.error('Erro no upload:', error);
-                    this.showNotification('❌ Erro ao fazer upload: ' + error.message, 'error');
+                    this.showNotification('Erro ao fazer upload: ' + error.message, 'error');
                 } finally {
                     this.hideLoading();
                 }
             }
 
-            async replaceBannerImage(file, title) {
-                // Buscar banner atual
-                const bannerQuery = await this.db.collection('siteImages').where('category', '==', 'banner').get();
+            async replaceHeroImage(file, title) {
+                // Buscar hero atual
+                const heroQuery = await this.db.collection('images').where('category', '==', 'hero').get();
                 
-                // Se existir banner atual, deletar do storage e firestore
-                if (!bannerQuery.empty) {
-                    const currentBanner = bannerQuery.docs[0];
-                    const currentData = currentBanner.data();
+                // Se existir hero atual, deletar do storage e firestore
+                if (!heroQuery.empty) {
+                    const currentHero = heroQuery.docs[0];
+                    const currentData = currentHero.data();
                     
                     // Deletar arquivo atual do storage
                     if (currentData.storagePath) {
@@ -2164,48 +2158,191 @@
                     }
                     
                     // Deletar documento do firestore
-                    await currentBanner.ref.delete();
+                    await currentHero.ref.delete();
                 }
 
                 // Fazer upload da nova imagem
-                await this.addNewImage(file, title, 'banner');
+                await this.addNewImage(file, title, 'hero');
             }
 
             async addNewImage(file, title, category) {
-                const timestamp = Date.now();
-                const fileName = `${category}/${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-                const storageRef = this.storage.ref(fileName);
+                try {
+                    const timestamp = Date.now();
+                    const fileName = `${category}/${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                    
+                    console.log(`📤 Iniciando upload: ${fileName}`);
+                    
+                    const storageRef = this.storage.ref(fileName);
+                    
+                    // Fazer upload com progress
+                    const uploadTask = storageRef.put(file);
+                    
+                    // Monitor progress
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            console.log(`📊 Upload progress: ${progress.toFixed(1)}%`);
+                        },
+                        (error) => {
+                            console.error('Erro durante upload:', error);
+                            throw error;
+                        }
+                    );
+                    
+                    // Aguardar conclusão
+                    const snapshot = await uploadTask;
+                    const downloadURL = await snapshot.ref.getDownloadURL();
+                    
+                    console.log(`✅ Upload concluído. URL: ${downloadURL}`);
+                    
+                    // Salvar dados no Firestore - usar campo 'section' para alinhamento com site
+                    const imageData = {
+                        title: title,
+                        category: category,
+                        section: category, // Campo para sincronização com o site
+                        url: downloadURL,
+                        cloudinaryUrl: downloadURL, // Alias para compatibilidade
+                        storagePath: fileName,
+                        active: true,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        size: file.size,
+                        type: file.type,
+                        filename: file.name
+                    };
+
+                    await this.db.collection('images').add(imageData);
+                    console.log(`💾 Dados salvos na coleção 'images' com categoria: ${category}`);
+                    
+                    this.showNotification('✅ Imagem adicionada com sucesso!', 'success');
+                    
+                    // Limpar formulário
+                    document.getElementById('imageInput').value = '';
+                    document.getElementById('imageTitle').value = '';
+                    const imagePreview = document.getElementById('imagePreview');
+                    if (imagePreview) imagePreview.style.display = 'none';
+                    
+                    // Recarregar galeria
+                    this.loadFirebaseImages();
+                    
+                    // Notificar site principal sobre mudanças em tempo real  
+                    this.notifySiteUpdate(category, 'upload', {
+                        id: 'new_' + timestamp,
+                        title: title,
+                        section: category,
+                        url: downloadURL
+                    });
+                    
+                } catch (error) {
+                    console.error('Erro detalhado no upload:', error);
+                    
+                    let errorMessage = 'Erro ao fazer upload da imagem';
+                    if (error.code === 'storage/unauthorized') {
+                        errorMessage = 'Sem permissão para fazer upload. Configure as regras do Firebase Storage.';
+                    } else if (error.code === 'storage/canceled') {
+                        errorMessage = 'Upload cancelado pelo usuário.';
+                    } else if (error.code === 'storage/unknown') {
+                        errorMessage = 'Erro desconhecido. Verifique as regras do Firebase.';
+                    } else if (error.message.includes('CORS')) {
+                        errorMessage = 'Erro CORS: Configure as regras do Firebase Storage';
+                        
+                        // Mostrar opção de simular upload para teste
+                        const simulateUpload = confirm(
+                            'Upload bloqueado por CORS.\n\n' +
+                            'Deseja simular o upload para teste?\n' +
+                            '(A imagem será salva localmente no dashboard mas não no Firebase)'
+                        );
+                        
+                        if (simulateUpload) {
+                            await this.simulateLocalUpload(file, title, category);
+                            return;
+                        }
+                    }
+                    
+                    this.showNotification(`❌ ${errorMessage}`, 'error');
+                    throw error;
+                }
+            }
+
+            async simulateLocalUpload(file, title, category) {
+                console.log('🧪 Simulando upload local para teste...');
                 
-                // Fazer upload
-                const uploadTask = await storageRef.put(file);
-                const downloadURL = await uploadTask.ref.getDownloadURL();
-                
-                // Salvar dados no Firestore
-                const imageData = {
+                // Criar URL local para a imagem
+                const reader = new FileReader();
+                const localUrl = await new Promise(resolve => {
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+
+                // Simular dados da imagem
+                const simulatedImageData = {
+                    id: 'local_' + Date.now(),
+                    url: localUrl,
                     title: title,
                     category: category,
-                    url: downloadURL,
-                    storagePath: fileName,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    size: file.size,
-                    type: file.type
+                    uploadedAt: new Date(),
+                    isLocal: true // Flag para identificar imagem simulada
                 };
 
-                await this.db.collection('siteImages').add(imageData);
+                // Adicionar à galeria temporariamente
+                this.addLocalImageToGallery(simulatedImageData);
                 
-                this.showNotification('✅ Imagem adicionada com sucesso!', 'success');
+                this.showNotification('🧪 Imagem adicionada localmente para teste (não salva no Firebase)', 'info');
                 
                 // Limpar formulário
                 document.getElementById('imageInput').value = '';
                 document.getElementById('imageTitle').value = '';
-                document.getElementById('imagePreview').style.display = 'none';
-                
-                // Recarregar galeria
-                this.loadFirebaseImages();
-                
-                // Notificar site principal sobre mudanças
-                this.notifySiteUpdate(category);
+                const imagePreview = document.getElementById('imagePreview');
+                if (imagePreview) imagePreview.style.display = 'none';
+            }
+
+            addLocalImageToGallery(imageData) {
+                // Encontrar a seção correta e adicionar a imagem
+                const sectionsContainer = document.getElementById('sectionsContainer');
+                if (!sectionsContainer) return;
+
+                const sections = sectionsContainer.querySelectorAll('.section-group');
+                sections.forEach(section => {
+                    const title = section.querySelector('.section-title');
+                    if (title && title.textContent.toLowerCase().includes(imageData.category.toLowerCase())) {
+                        const imagesGrid = section.querySelector('.images-grid');
+                        if (imagesGrid) {
+                            // Remover mensagem de vazio se existir
+                            const emptyMessage = imagesGrid.querySelector('div[style*="text-align: center"]');
+                            if (emptyMessage) {
+                                emptyMessage.remove();
+                            }
+
+                            // Adicionar nova imagem
+                            const imageItem = document.createElement('div');
+                            imageItem.className = 'image-item';
+                            imageItem.innerHTML = `
+                                <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
+                                <div class="image-overlay">
+                                    <div class="image-title">${imageData.title} 🧪</div>
+                                    <div class="image-actions">
+                                        <button class="btn-small" title="Teste Local - Não editável">
+                                            <i class="fas fa-flask"></i>
+                                        </button>
+                                        <button class="btn-small" onclick="this.closest('.image-item').remove()" 
+                                                style="background: var(--accent-red);" title="Remover Teste">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            imagesGrid.appendChild(imageItem);
+                            
+                            // Atualizar contador
+                            const countElement = section.querySelector('.section-count');
+                            if (countElement) {
+                                const currentCount = parseInt(countElement.textContent) || 0;
+                                countElement.textContent = `${currentCount + 1} ${currentCount + 1 === 1 ? 'imagem' : 'imagens'}`;
+                            }
+                        }
+                        return;
+                    }
+                });
             }
 
             async editImage(imageId, imageData) {
@@ -2221,7 +2358,7 @@
                 this.showLoading();
                 
                 try {
-                    await this.db.collection('siteImages').doc(imageId).update({
+                    await this.db.collection('images').doc(imageId).update({
                         title: newTitle.trim(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
@@ -2231,7 +2368,7 @@
                     
                 } catch (error) {
                     console.error('Erro ao editar imagem:', error);
-                    this.showNotification('❌ Erro ao editar imagem', 'error');
+                    this.showNotification('Erro ao editar imagem', 'error');
                 } finally {
                     this.hideLoading();
                 }
@@ -2239,7 +2376,7 @@
 
             async deleteImage(imageId, imageUrl, category) {
                 const confirmMessage = category === 'banner' 
-                    ? '⚠️ Tem certeza que deseja excluir a imagem do banner? O banner ficará sem imagem!'
+                    ? 'Tem certeza que deseja excluir a imagem do banner? O banner ficará sem imagem!'
                     : 'Tem certeza que deseja excluir esta imagem?';
                     
                 if (!confirm(confirmMessage)) return;
@@ -2248,7 +2385,7 @@
                 
                 try {
                     // Buscar dados da imagem
-                    const imageDoc = await this.db.collection('siteImages').doc(imageId).get();
+                    const imageDoc = await this.db.collection('images').doc(imageId).get();
                     
                     if (!imageDoc.exists) {
                         throw new Error('Imagem não encontrada');
@@ -2266,13 +2403,13 @@
                     }
                     
                     // Deletar do Firestore
-                    await this.db.collection('siteImages').doc(imageId).delete();
+                    await this.db.collection('images').doc(imageId).delete();
                     
                     this.showNotification('✅ Imagem excluída com sucesso!', 'success');
                     this.loadFirebaseImages();
                     
-                    // Notificar site principal sobre mudanças
-                    this.notifySiteUpdate(category);
+                    // Notificar site principal sobre mudanças em tempo real
+                    this.notifySiteUpdate(category, 'delete', { imageId });
                     
                 } catch (error) {
                     console.error('Erro ao excluir imagem:', error);
@@ -2282,11 +2419,40 @@
                 }
             }
 
-            notifySiteUpdate(category) {
-                // Disparar evento para sincronização do site principal
+            notifySiteUpdate(category, action = 'update', data = {}) {
+                console.log(`🔄 Notificando site sobre ${action} na categoria: ${category}`);
+                
+                // Disparar evento customizado para sincronização em tempo real
+                const updateEvent = new CustomEvent('dashboardImageUpdate', {
+                    detail: { 
+                        category: category,
+                        section: category, // Usar section para compatibilidade com site
+                        action: action,
+                        timestamp: Date.now(),
+                        data: data
+                    }
+                });
+                
+                window.dispatchEvent(updateEvent);
+                
+                // Também disparar evento legado para compatibilidade
                 window.dispatchEvent(new CustomEvent('imagesUpdated', {
                     detail: { category: category, timestamp: Date.now() }
                 }));
+                
+                // Notificar parent window se estiver em iframe
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'dashboardImageUpdate',
+                        category: category,
+                        section: category,
+                        action: action,
+                        data: data,
+                        timestamp: Date.now()
+                    }, '*');
+                }
+                
+                console.log(`✅ Notificação enviada: ${action} na seção ${category}`);
             }
 
             showLoading() {
@@ -2602,30 +2768,26 @@
         function editImage(imageId, category, title, url) {
             console.log(`✏️ Editando imagem: ${imageId} da categoria: ${category}`);
             
-            const newTitle = prompt('Digite o novo título para a imagem:', title);
-            if (newTitle && newTitle.trim() !== '') {
-                showNotification(`📝 Título alterado para: "${newTitle}"`, 'success');
-                
-                // Aqui você implementaria a atualização no Firebase
-                // Em produção: dashboard.updateImageTitle(imageId, newTitle);
+            const dashboard = window.dashboardInstance;
+            if (dashboard) {
+                dashboard.editImage(imageId, { title, url, category });
+            } else {
+                const newTitle = prompt('Digite o novo título para a imagem:', title);
+                if (newTitle && newTitle.trim() !== '') {
+                    showNotification(`Título alterado para: "${newTitle}"`, 'success');
+                }
             }
         }
 
         function deleteImage(imageId, category, title) {
-            if (confirm(`❌ Tem certeza que deseja excluir a imagem "${title}" da seção ${category}?`)) {
-                console.log(`🗑️ Excluindo imagem: ${imageId} da categoria: ${category}`);
-                showNotification(`🗑️ Imagem "${title}" removida com sucesso`, 'success');
-                
-                // Aqui você implementaria a remoção no Firebase
-                // Em produção: dashboard.removeImage(imageId, category);
-                
-                // Simular remoção visual (temporário)
-                setTimeout(() => {
-                    const dashboard = window.dashboardInstance;
-                    if (dashboard) {
-                        dashboard.loadFirebaseImages();
-                    }
-                }, 1000);
+            const dashboard = window.dashboardInstance;
+            if (dashboard) {
+                dashboard.deleteImage(imageId, '', category);
+            } else {
+                if (confirm(`Tem certeza que deseja excluir a imagem "${title}" da seção ${category}?`)) {
+                    console.log(`Excluindo imagem: ${imageId} da categoria: ${category}`);
+                    showNotification(`Imagem "${title}" removida com sucesso`, 'success');
+                }
             }
         }
 

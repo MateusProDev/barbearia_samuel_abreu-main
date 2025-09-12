@@ -1,0 +1,281 @@
+rules_version = '2';
+
+// 🔥 Firestore Database Rules - Barbearia Samuel Abreu
+// 🔓 ACESSO PÚBLICO TOTAL PARA DESENVOLVIMENTO E FUNCIONALIDADE COMPLETA
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 👥 COLEÇÃO DE USUÁRIOS
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📝 CONTEÚDO DO SITE (siteContent) - ESSENCIAL
+    match /siteContent/{document} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🖼️ IMAGENS DO SITE - CRÍTICO PARA GALERIA
+    match /images/{imageId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📋 SEÇÕES DO SITE - PARA ORGANIZAÇÃO
+    match /sections/{sectionId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📸 GALERIA PRINCIPAL - PARA SITE
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🎯 BANNER/HERO PRINCIPAL - SEÇÃO ESPECIAL
+    match /banner/{bannerId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    match /hero/{heroId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // ✂️ SERVIÇOS DA BARBEARIA
+    match /servicos/{servicoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 👥 EQUIPE DA BARBEARIA
+    match /equipe/{membroId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🏪 INSTALAÇÕES
+    match /instalacoes/{instalacaoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🎉 PROMOÇÕES
+    match /promocoes/{promocaoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // ⭐ ANTES E DEPOIS
+    match /antesDepois/{transformacaoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📞 INFORMAÇÕES DE CONTATO
+    match /contact/{document} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🕐 HORÁRIOS DE FUNCIONAMENTO
+    match /schedule/{document} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // ⚙️ CONFIGURAÇÕES GERAIS
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📊 ESTATÍSTICAS E ANALYTICS
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📋 LOGS DO SISTEMA
+    match /logs/{logId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🔄 MIGRAÇÕES E BACKUPS
+    match /migrations/{migrationId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📱 DADOS DE APLICATIVOS
+    match /appData/{dataId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 💰 PREÇOS E VALORES
+    match /precos/{precoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🎨 PERSONALIZAÇÃO DE TEMA
+    match /theme/{themeId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📬 MENSAGENS E CONTATOS
+    match /mensagens/{mensagemId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🔐 SESSÕES DE ADMIN
+    match /adminSessions/{sessionId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📈 MÉTRICAS DO SITE
+    match /metricas/{metricaId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🗂️ METADADOS DE ARQUIVOS
+    match /fileMetadata/{fileId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🔄 SINCRONIZAÇÃO DE CONTEÚDO
+    match /contentSync/{syncId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📅 AGENDAMENTOS (FUTURO)
+    match /agendamentos/{agendamentoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 👤 CLIENTES (FUTURO)
+    match /clientes/{clienteId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 💳 PAGAMENTOS (FUTURO)
+    match /pagamentos/{pagamentoId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📝 REVIEWS E AVALIAÇÕES
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🎯 CAMPANHAS DE MARKETING
+    match /campanhas/{campanhaId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 📊 DASHBOARD DATA
+    match /dashboardData/{dataId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🔄 IMAGENS DO SITE (COLEÇÃO ALTERNATIVA)
+    match /siteImages/{imageId} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+    
+    // 🔍 PERMITIR ACESSO A QUALQUER COLEÇÃO (DESENVOLVIMENTO)
+    // Esta regra garante que qualquer coleção nova funcione automaticamente
+    match /{document=**} {
+      allow read: if true;
+      allow write: if true;
+      allow delete: if true;
+      allow create: if true;
+    }
+  }
+}
