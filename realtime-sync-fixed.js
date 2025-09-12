@@ -268,9 +268,12 @@ class RealtimeSync {
         let existingMember = document.querySelector(`[data-image-id="${imageData.id || imageData.title}"]`);
         
         if (!existingMember && imageData.active) {
+            // Check if this is the first slide
+            const isFirstSlide = aboutContainer.children.length === 0;
+            
             // Create new carousel slide
             const memberSlide = document.createElement('div');
-            memberSlide.className = 'carousel-slide';
+            memberSlide.className = isFirstSlide ? 'carousel-slide active' : 'carousel-slide';
             memberSlide.setAttribute('data-image-id', imageData.id || imageData.title);
             memberSlide.innerHTML = `
                 <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
@@ -281,6 +284,10 @@ class RealtimeSync {
             `;
             
             aboutContainer.appendChild(memberSlide);
+            
+            // Update carousel indicators
+            this.updateCarouselIndicators();
+            
             console.log('✅ Novo membro da equipe adicionado ao carrossel');
         } else if (existingMember) {
             // Update existing member
@@ -293,6 +300,21 @@ class RealtimeSync {
             if (desc && imageData.description) desc.textContent = imageData.description;
             
             console.log('✅ Membro da equipe atualizado');
+        }
+    }
+
+    updateCarouselIndicators() {
+        const indicatorsContainer = document.getElementById('carouselIndicators');
+        const slides = document.querySelectorAll('.carousel-slide');
+        
+        if (indicatorsContainer && slides.length > 0) {
+            indicatorsContainer.innerHTML = '';
+            slides.forEach((slide, index) => {
+                const indicator = document.createElement('button');
+                indicator.className = index === 0 ? 'indicator active' : 'indicator';
+                indicator.setAttribute('data-slide', index);
+                indicatorsContainer.appendChild(indicator);
+            });
         }
     }
 

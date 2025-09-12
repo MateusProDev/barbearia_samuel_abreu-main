@@ -251,59 +251,17 @@
                     <div class="carousel-track" id="carouselTrack">
                         <!-- Slides serão adicionados dinamicamente pelo Firebase -->
                     </div>
-                        <div class="carousel-slide">
-                            <img src="img/pro2.jpeg" alt="Trabalho em Andamento">
-                            <div class="carousel-caption">
-                                <h4>Dedicação</h4>
-                                <p>Atenção aos detalhes</p>
-                            </div>
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="img/pro3.jpeg" alt="Cliente Satisfeito">
-                            <div class="carousel-caption">
-                                <h4>Resultados</h4>
-                                <p>Clientes satisfeitos</p>
-                            </div>
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="img/kaioUm.jpeg" alt="Kaio - Barbeiro">
-                            <div class="carousel-caption">
-                                <h4>Kaio</h4>
-                                <p>Barbeiro Profissional</p>
-                            </div>
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="img/kaioDois.jpeg" alt="Kaio Trabalhando">
-                            <div class="carousel-caption">
-                                <h4>Equipe Qualificada</h4>
-                                <p>Experiência e talento</p>
-                            </div>
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="img/samu.jpeg" alt="Samuel em Ação">
-                            <div class="carousel-caption">
-                                <h4>Mestre Samuel</h4>
-                                <p>Arte e precisão</p>
-                            </div>
-                        </div>
-                    </div>
                     
-                    <!-- Controles do Carrossel -->
-                    <button class="carousel-btn carousel-btn-prev" id="prevBtn">
-                        <span>&#8249;</span>
-                    </button>
-                    <button class="carousel-btn carousel-btn-next" id="nextBtn">
-                        <span>&#8250;</span>
-                    </button>
+                    <!-- Controles do carousel -->
+                    <button class="carousel-btn carousel-btn-prev" onclick="moveCarousel(-1)">‹</button>
+                    <button class="carousel-btn carousel-btn-next" onclick="moveCarousel(1)">›</button>
                     
                     <!-- Indicadores -->
-                    <div class="carousel-indicators" id="carouselIndicators">
-                        <button class="indicator active" data-slide="0"></button>
-                        <button class="indicator" data-slide="1"></button>
-                        <button class="indicator" data-slide="2"></button>
-                        <button class="indicator" data-slide="3"></button>
-                        <button class="indicator" data-slide="4"></button>
-                        <button class="indicator" data-slide="5"></button>
+                    <div class="carousel-indicators" id="carouselIndicators"></div>
+                </div>
+            </div>
+        </div>
+    </section>
                         <button class="indicator" data-slide="6"></button>
                         <button class="indicator" data-slide="7"></button>
                         <button class="indicator" data-slide="8"></button>
