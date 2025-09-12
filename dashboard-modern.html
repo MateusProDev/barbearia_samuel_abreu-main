@@ -1238,10 +1238,10 @@
                             <label>Seção do Site</label>
                             <select id="imageCategory" class="form-input">
                                 <option value="">Escolha a seção do site</option>
-                                <option value="hero">🎯 Hero/Banner Principal</option>
+                                <option value="hero">🎯 Hero/Banner Principal (#home)</option>
                                 <option value="servicos">✂️ Seção Serviços (#servicos)</option>
                                 <option value="cortes">🖼️ Galeria de Cortes (#cortes)</option>
-                                <option value="sobre">👥 Carrossel Equipe (#sobre)</option>
+                                <option value="sobre">👥 Seção Sobre/Equipe (#sobre)</option>
                             </select>
                         </div>
 
@@ -2183,6 +2183,12 @@
                     };
 
                     const docRef = await this.db.collection('images').add(imageData);
+                    
+                    // Atualizar com o ID do documento
+                    await docRef.update({
+                        id: docRef.id
+                    });
+                    
                     console.log(`💾 Dados salvos na coleção 'images' com ID: ${docRef.id}`);
                     
                     this.showNotification('✅ Imagem adicionada com sucesso!', 'success');

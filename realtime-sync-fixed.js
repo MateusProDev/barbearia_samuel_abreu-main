@@ -20,15 +20,57 @@ class RealtimeSync {
 
             this.db = firebase.firestore();
             
+            // Verificar se os containers do site existem
+            this.verifyContainers();
+            
             // Setup real-time listeners
             this.setupImageListener();
             this.setupContentListener();
+            
+            // Load existing images
+            await this.loadExistingImages();
             
             this.isInitialized = true;
             console.log('✅ Sistema de sincronização inicializado!');
             
         } catch (error) {
             console.error('❌ Erro na inicialização da sincronização:', error);
+        }
+    }
+
+    verifyContainers() {
+        const containers = {
+            'Hero/Banner': document.querySelector('.hero, #home'),
+            'Serviços': document.querySelector('.services-grid'),
+            'Galeria': document.querySelector('.gallery-grid'),
+            'Equipe': document.querySelector('.carousel-track, #carouselTrack')
+        };
+
+        console.log('🔍 Verificando containers do site:');
+        for (const [name, container] of Object.entries(containers)) {
+            console.log(`  ${container ? '✅' : '❌'} ${name}: ${container ? 'Encontrado' : 'Não encontrado'}`);
+        }
+    }
+
+    async loadExistingImages() {
+        console.log('📥 Carregando imagens existentes...');
+        
+        try {
+            const snapshot = await this.db.collection('images')
+                .where('active', '==', true)
+                .get();
+            
+            console.log(`📥 Encontradas ${snapshot.size} imagens ativas no Firestore`);
+            
+            snapshot.forEach((doc) => {
+                const imageData = doc.data();
+                console.log(`🖼️ Processando imagem: ${imageData.title} (${imageData.category})`);
+                this.handleImageAdded(imageData, doc.id);
+            });
+            
+            console.log('✅ Imagens existentes carregadas!');
+        } catch (error) {
+            console.error('❌ Erro ao carregar imagens existentes:', error);
         }
     }
 
@@ -117,28 +159,26 @@ class RealtimeSync {
     }
 
     updateHeroSection(imageData) {
-        console.log('🌟 Atualizando seção hero/banner...');
+        console.log('🌟 Atualizando background do hero/banner...');
         
-        // Update main hero background
-        const heroSection = document.querySelector('.hero-section, .banner-section, #hero');
+        // Update ONLY the background of the hero section, keeping the logo intact
+        const heroSection = document.querySelector('.hero, #home');
         if (heroSection && imageData.active) {
             heroSection.style.backgroundImage = `url('${imageData.url}')`;
-            console.log('✅ Background do hero atualizado');
+            heroSection.style.backgroundSize = 'cover';
+            heroSection.style.backgroundPosition = 'center';
+            heroSection.style.backgroundRepeat = 'no-repeat';
+            console.log('✅ Background do hero atualizado, logo mantida');
         }
 
-        // Update hero image if exists
-        const heroImg = document.querySelector('.hero-image, .banner-image');
-        if (heroImg && imageData.active) {
-            heroImg.src = imageData.url;
-            heroImg.alt = imageData.title;
-            console.log('✅ Imagem do hero atualizada');
-        }
+        // DO NOT touch the hero logo - it should always stay the same
+        // const heroImg = document.querySelector('.hero-logo'); // NEVER change this
     }
 
     updateServicesSection(imageData) {
         console.log('✂️ Atualizando seção de serviços...');
         
-        const servicesContainer = document.querySelector('.services-grid, .servicos-grid, #servicos .grid');
+        const servicesContainer = document.querySelector('.services-grid, #servicos .services-grid');
         if (!servicesContainer) {
             console.warn('Container de serviços não encontrado');
             return;
@@ -148,18 +188,14 @@ class RealtimeSync {
         let existingCard = document.querySelector(`[data-image-id="${imageData.id || imageData.title}"]`);
         
         if (!existingCard && imageData.active) {
-            // Create new service card
+            // Create new service card using dashboard structure
             const serviceCard = document.createElement('div');
-            serviceCard.className = 'service-card';
+            serviceCard.className = 'service-card fade-in';
             serviceCard.setAttribute('data-image-id', imageData.id || imageData.title);
             serviceCard.innerHTML = `
-                <div class="service-image">
-                    <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
-                </div>
-                <div class="service-content">
-                    <h3>${imageData.title}</h3>
-                    ${imageData.description ? `<p>${imageData.description}</p>` : ''}
-                </div>
+                <img src="${imageData.url || imageData.cloudinaryUrl}" alt="${imageData.title}" loading="lazy">
+                <h3>${imageData.title}</h3>
+                ${imageData.description ? `<p>${imageData.description}</p>` : '<p>Serviço profissional de qualidade</p>'}
             `;
             
             servicesContainer.appendChild(serviceCard);
@@ -170,7 +206,7 @@ class RealtimeSync {
             const title = existingCard.querySelector('h3');
             const desc = existingCard.querySelector('p');
             
-            if (img) img.src = imageData.url;
+            if (img) img.src = imageData.url || imageData.cloudinaryUrl;
             if (title) title.textContent = imageData.title;
             if (desc && imageData.description) desc.textContent = imageData.description;
             
@@ -181,7 +217,7 @@ class RealtimeSync {
     updateGallerySection(imageData) {
         console.log('📸 Atualizando galeria de cortes...');
         
-        const galleryContainer = document.querySelector('.gallery-grid, .cortes-grid, #galeria .grid, .portfolio-grid');
+        const galleryContainer = document.querySelector('.gallery-grid, #cortes .gallery-grid');
         if (!galleryContainer) {
             console.warn('Container da galeria não encontrado');
             return;
@@ -191,15 +227,15 @@ class RealtimeSync {
         let existingImage = document.querySelector(`[data-image-id="${imageData.id || imageData.title}"]`);
         
         if (!existingImage && imageData.active) {
-            // Create new gallery item
+            // Create new gallery item using site structure
             const galleryItem = document.createElement('div');
-            galleryItem.className = 'gallery-item';
+            galleryItem.className = 'gallery-item fade-in';
             galleryItem.setAttribute('data-image-id', imageData.id || imageData.title);
             galleryItem.innerHTML = `
-                <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
+                <img src="${imageData.url || imageData.cloudinaryUrl}" alt="${imageData.title}" loading="lazy">
                 <div class="gallery-overlay">
-                    <h4>${imageData.title}</h4>
-                    ${imageData.description ? `<p>${imageData.description}</p>` : ''}
+                    <h3>${imageData.title}</h3>
+                    ${imageData.description ? `<p>${imageData.description}</p>` : '<p>Estilo moderno e profissional</p>'}
                 </div>
             `;
             
@@ -208,10 +244,10 @@ class RealtimeSync {
         } else if (existingImage) {
             // Update existing image
             const img = existingImage.querySelector('img');
-            const title = existingImage.querySelector('h4');
+            const title = existingImage.querySelector('h3');
             const desc = existingImage.querySelector('p');
             
-            if (img) img.src = imageData.url;
+            if (img) img.src = imageData.url || imageData.cloudinaryUrl;
             if (title) title.textContent = imageData.title;
             if (desc && imageData.description) desc.textContent = imageData.description;
             
@@ -222,7 +258,7 @@ class RealtimeSync {
     updateAboutSection(imageData) {
         console.log('👥 Atualizando seção sobre/equipe...');
         
-        const aboutContainer = document.querySelector('.team-grid, .equipe-grid, #sobre .grid');
+        const aboutContainer = document.querySelector('.carousel-track, #carouselTrack, #sobre .carousel-track');
         if (!aboutContainer) {
             console.warn('Container da equipe não encontrado');
             return;
@@ -232,26 +268,24 @@ class RealtimeSync {
         let existingMember = document.querySelector(`[data-image-id="${imageData.id || imageData.title}"]`);
         
         if (!existingMember && imageData.active) {
-            // Create new team member
-            const memberCard = document.createElement('div');
-            memberCard.className = 'team-member';
-            memberCard.setAttribute('data-image-id', imageData.id || imageData.title);
-            memberCard.innerHTML = `
-                <div class="member-image">
-                    <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
-                </div>
-                <div class="member-info">
-                    <h3>${imageData.title}</h3>
-                    ${imageData.description ? `<p>${imageData.description}</p>` : ''}
+            // Create new carousel slide
+            const memberSlide = document.createElement('div');
+            memberSlide.className = 'carousel-slide';
+            memberSlide.setAttribute('data-image-id', imageData.id || imageData.title);
+            memberSlide.innerHTML = `
+                <img src="${imageData.url}" alt="${imageData.title}" loading="lazy">
+                <div class="carousel-caption">
+                    <h4>${imageData.title}</h4>
+                    ${imageData.description ? `<p>${imageData.description}</p>` : '<p>Membro da Equipe</p>'}
                 </div>
             `;
             
-            aboutContainer.appendChild(memberCard);
-            console.log('✅ Novo membro da equipe adicionado');
+            aboutContainer.appendChild(memberSlide);
+            console.log('✅ Novo membro da equipe adicionado ao carrossel');
         } else if (existingMember) {
             // Update existing member
             const img = existingMember.querySelector('img');
-            const title = existingMember.querySelector('h3');
+            const title = existingMember.querySelector('h4');
             const desc = existingMember.querySelector('p');
             
             if (img) img.src = imageData.url;
