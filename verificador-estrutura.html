@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Verificador de Estrutura - Firestore</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .info { background: #2196F3; }
+        .warning { background: #FF9800; }
+        .btn {
+            background: #D4AF37;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .collection {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #D4AF37;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Verificador de Estrutura Firestore</h1>
+    <p>Este verificador analisa seu banco de dados e garante que tudo esteja configurado corretamente.</p>
+    
+    <button class="btn" onclick="verificarEstrutura()">🔍 Verificar Estrutura</button>
+    <button class="btn" onclick="criarSecoesFaltantes()" id="criarBtn" style="display:none;">➕ Criar Seções Faltantes</button>
+    
+    <div id="resultados"></div>
+
+    <script>
+        // Configuração Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTcvqfii2TE08vqolCgqv0jI9VWTfarOA",
+            authDomain: "barbeariasamuelabreu.firebaseapp.com",
+            projectId: "barbeariasamuelabreu",
+            storageBucket: "barbeariasamuelabreu.firebasestorage.app",
+            messagingSenderId: "690733163957",
+            appId: "1:690733163957:web:c3f77d1219a81eeeb6e5fc"
+        };
+
+        let db;
+        let secoesFaltantes = [];
+
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            document.getElementById('resultados').appendChild(div);
+        }
+
+        async function verificarEstrutura() {
+            document.getElementById('resultados').innerHTML = '';
+            log('🔍 Iniciando verificação da estrutura...', 'info');
+            
+            // Estrutura esperada baseada no que vi no seu banco
+            const estruturaEsperada = {
+                'images': 'Coleção principal de imagens',
+                'sections': 'Seções do site (gallery, hero, services, team)',
+                'settings': 'Configurações do site',
+                'siteContent': 'Conteúdo principal (main, contact, schedule)',
+                'users': 'Usuários administrativos'
+            };
+
+            const secoesEsperadas = ['gallery', 'hero', 'services', 'team'];
+            const documentosSiteContent = ['main', 'contact', 'schedule'];
+
+            try {
+                // Verificar coleções principais
+                for (const [colecao, descricao] of Object.entries(estruturaEsperada)) {
+                    try {
+                        const snapshot = await db.collection(colecao).limit(1).get();
+                        if (snapshot.empty) {
+                            log(`⚠️ Coleção '${colecao}' existe mas está vazia - ${descricao}`, 'warning');
+                        } else {
+                            const total = await db.collection(colecao).get();
+                            log(`✅ Coleção '${colecao}' OK - ${total.size} documentos - ${descricao}`, 'success');
+                        }
+                    } catch (error) {
+                        log(`❌ Coleção '${colecao}' com problema: ${error.message}`, 'error');
+                    }
+                }
+
+                // Verificar seções específicas
+                log('🔍 Verificando seções específicas...', 'info');
+                secoesFaltantes = [];
+                
+                for (const secao of secoesEsperadas) {
+                    try {
+                        const doc = await db.collection('sections').doc(secao).get();
+                        if (!doc.exists) {
+                            log(`⚠️ Seção '${secao}' não encontrada`, 'warning');
+                            secoesFaltantes.push(secao);
+                        } else {
+                            log(`✅ Seção '${secao}' configurada`, 'success');
+                        }
+                    } catch (error) {
+                        log(`❌ Erro ao verificar seção '${secao}': ${error.message}`, 'error');
+                        secoesFaltantes.push(secao);
+                    }
+                }
+
+                // Verificar documentos do siteContent
+                log('🔍 Verificando documentos do siteContent...', 'info');
+                for (const doc of documentosSiteContent) {
+                    try {
+                        const documento = await db.collection('siteContent').doc(doc).get();
+                        if (!documento.exists) {
+                            log(`⚠️ Documento siteContent/'${doc}' não encontrado`, 'warning');
+                        } else {
+                            log(`✅ Documento siteContent/'${doc}' OK`, 'success');
+                        }
+                    } catch (error) {
+                        log(`❌ Erro ao verificar siteContent/'${doc}': ${error.message}`, 'error');
+                    }
+                }
+
+                // Estatísticas das imagens
+                log('📊 Analisando distribuição de imagens...', 'info');
+                const imagesSnapshot = await db.collection('images').get();
+                const distribuicao = {};
+                
+                imagesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const secao = data.section || data.category || 'indefinida';
+                    distribuicao[secao] = (distribuicao[secao] || 0) + 1;
+                });
+
+                Object.entries(distribuicao).forEach(([secao, count]) => {
+                    log(`📁 Seção '${secao}': ${count} imagens`, 'info');
+                });
+
+                if (secoesFaltantes.length > 0) {
+                    log(`⚠️ ${secoesFaltantes.length} seções precisam ser criadas: ${secoesFaltantes.join(', ')}`, 'warning');
+                    document.getElementById('criarBtn').style.display = 'inline-block';
+                } else {
+                    log('🎉 Estrutura completa! Tudo configurado corretamente.', 'success');
+                }
+
+            } catch (error) {
+                log(`❌ Erro na verificação: ${error.message}`, 'error');
+            }
+        }
+
+        async function criarSecoesFaltantes() {
+            log('🔧 Criando seções faltantes...', 'info');
+            
+            const secoesConfig = {
+                'gallery': {
+                    title: 'Galeria de Trabalhos',
+                    subtitle: 'Veja o que sabemos fazer',
+                    description: 'Portfólio dos nossos melhores trabalhos',
+                    order: 2,
+                    visible: true
+                },
+                'hero': {
+                    title: 'Hero Section',
+                    subtitle: 'Banner Principal',
+                    description: 'Seção principal do site',
+                    order: 0,
+                    visible: true
+                },
+                'services': {
+                    title: 'Nossos Serviços',
+                    subtitle: 'Qualidade profissional',
+                    description: 'Serviços oferecidos pela barbearia',
+                    order: 1,
+                    visible: true
+                },
+                'team': {
+                    title: 'Nossa Equipe',
+                    subtitle: 'Profissionais qualificados',
+                    description: 'Conheça nossos barbeiros',
+                    order: 3,
+                    visible: true
+                }
+            };
+
+            try {
+                for (const secao of secoesFaltantes) {
+                    const config = secoesConfig[secao];
+                    if (config) {
+                        await db.collection('sections').doc(secao).set({
+                            ...config,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        log(`✅ Seção '${secao}' criada com sucesso`, 'success');
+                    }
+                }
+                
+                log('🎉 Todas as seções foram criadas!', 'success');
+                document.getElementById('criarBtn').style.display = 'none';
+                
+                // Re-verificar
+                setTimeout(verificarEstrutura, 2000);
+                
+            } catch (error) {
+                log(`❌ Erro ao criar seções: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-verificar ao carregar
+        window.addEventListener('load', () => {
+            setTimeout(verificarEstrutura, 1000);
+        });
+    </script>
+</body>
+</html>
