@@ -360,6 +360,15 @@
         .stat-change.negative {
             color: var(--accent-red);
         }
+        
+        .stat-change.neutral {
+            color: var(--text-secondary);
+        }
+
+        /* Prevent JavaScript from changing static values */
+        .stat-number.static {
+            pointer-events: none;
+        }
 
         /* ===== DASHBOARD CARDS ===== */
         .dashboard-grid {
@@ -939,10 +948,10 @@
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-info">
-                        <h3>Sistema</h3>
+                        <h3>Versão do Sistema</h3>
                     </div>
                     <div class="stat-icon">
-                        <i class="fas fa-cog"></i>
+                        <i class="fas fa-code-branch"></i>
                     </div>
                 </div>
                 <div class="stat-number" id="lastUpdate">v2.0</div>
@@ -2652,23 +2661,8 @@
             }
 
             updateStats() {
-                // Simulate real-time updates
-                setInterval(() => {
-                    const stats = document.querySelectorAll('.stat-number');
-                    stats.forEach(stat => {
-                        const currentValue = parseInt(stat.textContent.replace(/[^\d]/g, ''));
-                        const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
-                        const newValue = Math.max(0, currentValue + variation);
-                        
-                        if (stat.textContent.includes('R$')) {
-                            stat.textContent = `R$ ${newValue.toFixed(1)}k`;
-                        } else if (stat.textContent.includes('.')) {
-                            stat.textContent = (newValue / 10).toFixed(1);
-                        } else {
-                            stat.textContent = newValue;
-                        }
-                    });
-                }, 30000); // Update every 30 seconds
+                // Stats are now static - no automatic updates needed
+                console.log('📊 Sistema configurado com stats estáticos');
             }
 
             checkAuth() {
@@ -2936,31 +2930,32 @@
 
         // Update real system stats
         async function updateSystemStats() {
-            console.log('🔄 Atualizando estatísticas do sistema...');
+            console.log('🔄 Verificando status do sistema...');
             
-            // Count images from database immediately
+            // Only update the status message, keep everything else static
             if (window.db) {
                 try {
-                    console.log('🔄 Contando imagens no Firebase...');
+                    console.log('🔄 Verificando conexão com Firebase...');
                     const imagesRef = window.db.collection('images');
                     const querySnapshot = await imagesRef.get();
                     const totalImages = querySnapshot.size;
                     
-                    console.log(`📊 Total encontrado: ${totalImages} imagens`);
+                    console.log(`📊 Sistema operacional - ${totalImages} imagens no banco`);
                     
-                    // Update status - keep version info static
+                    // Update only the status message
                     const statusElement = document.getElementById('updateStatus');
-                    if (totalImages > 0) {
-                        statusElement.innerHTML = '<i class="fas fa-check"></i> Online e atualizado';
+                    if (statusElement) {
+                        if (totalImages > 0) {
+                            statusElement.innerHTML = '<i class="fas fa-check"></i> Online e atualizado';
+                        } else {
+                            statusElement.innerHTML = '<i class="fas fa-info-circle"></i> Pronto para uploads';
+                        }
                         statusElement.className = 'stat-change positive';
-                    } else {
-                        statusElement.innerHTML = '<i class="fas fa-info-circle"></i> Pronto para uploads';
-                        statusElement.className = 'stat-change neutral';
                     }
                     
-                    console.log(`✅ Sistema atualizado - ${totalImages} imagens no banco`);
+                    console.log(`✅ Status atualizado - Sistema funcionando`);
                 } catch (error) {
-                    console.error('❌ Erro ao atualizar sistema:', error);
+                    console.error('❌ Erro na verificação:', error);
                     const statusElement = document.getElementById('updateStatus');
                     if (statusElement) {
                         statusElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro na verificação';
@@ -2968,7 +2963,7 @@
                     }
                 }
             } else {
-                console.log('⚠️ Firebase não inicializado ainda');
+                console.log('⚠️ Firebase ainda não inicializado');
                 const statusElement = document.getElementById('updateStatus');
                 if (statusElement) {
                     statusElement.innerHTML = '<i class="fas fa-clock"></i> Inicializando...';
@@ -3037,50 +3032,6 @@
                 console.error('Erro ao inicializar dados do sistema:', error);
             }
         }
-
-        // Force immediate count of existing images
-        async function forceCountImages() {
-            try {
-                console.log('🔍 Forçando contagem imediata das imagens...');
-                
-                if (!window.db) {
-                    console.log('⚠️ Firebase ainda não está pronto');
-                    return;
-                }
-
-                const imagesRef = window.db.collection('images');
-                const snapshot = await imagesRef.get();
-                const count = snapshot.size;
-                
-                console.log(`📊 Contagem forçada: ${count} imagens encontradas`);
-                
-                // Update immediately
-                const imageCounter = document.getElementById('totalImages');
-                imageCounter.textContent = count;
-                
-                // Update status
-                document.getElementById('updateStatus').innerHTML = '<i class="fas fa-check"></i> Sistema v2.0';
-                
-                // Update time
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                document.getElementById('lastUpdate').textContent = timeString;
-                
-                return count;
-                
-            } catch (error) {
-                console.error('❌ Erro na contagem forçada:', error);
-                document.getElementById('totalImages').textContent = '0';
-                document.getElementById('updateStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Sistema v2.0 - Erro';
-                return 0;
-            }
-        }
-
-        // Make function available globally
-        window.forceCountImages = forceCountImages;
 
         // Initialize stats counting when Firebase is ready
         function initializeStatsTracking() {
